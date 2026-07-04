@@ -9,8 +9,10 @@
 
 **RunUp** é um app de **treinos guiados de fitness** (corrida + força + mobilidade) com um marketplace de dois lados:
 
-- **Aluno** — executa treinos, acompanha progresso e pode usar planos prontos ou ser acompanhado por um treinador.
+- **Aluno** — executa os treinos **por fora do app** (o RunUp não rastreia corrida). No app ele apenas **confirma a execução** (check) ou **conecta o Strava** para importar a atividade automaticamente. Acompanha progresso e pode usar planos prontos ou ser acompanhado por um treinador.
 - **Treinador** — planeja treinos para seus alunos, direto no app ou subindo uma planilha Excel que ele já usa.
+
+> **Importante:** o RunUp **não é um rastreador (GPS/gravação ao vivo)**. É uma ferramenta de **planejamento + acompanhamento**. A execução acontece fora do app; o aluno confirma o que fez (manual ou via Strava). Isso torna o mobile online-first e dispensa GPS e sync offline de corrida ao vivo.
 
 **Modelo:** marketplace híbrido. O aluno pode se cadastrar sozinho e usar planos genéricos como porta de entrada, e também escolher/contratar um treinador dentro do app.
 
@@ -66,12 +68,26 @@ runup/
 - **Exercise** — biblioteca compartilhada (nome, grupo muscular, mídia/gif).
 
 ### Execução & progresso do aluno
-- **WorkoutLog** — o que o aluno de fato fez (distância real, ritmo, notas, RPE). Separado do prescrito, para comparar planejado × realizado.
+- **WorkoutLog** — **confirmação de execução** de um `WorkoutDay`. Não é uma corrida gravada no app; é o registro de que o aluno fez (ou pulou) o treino. Fonte:
+  - `source = manual` → o aluno dá o check, opcionalmente com distância/tempo digitados.
+  - `source = strava` → a atividade é importada do Strava e casada com o `WorkoutDay` planejado (distância, ritmo, tempo vêm prontos).
+  - **Feedback do aluno (em qualquer fonte):** ao dar o check, o aluno pode registrar:
+    - `perceivedEffort` (RPE / sensação de esforço, ex.: escala 1–10)
+    - `pain` (dores/desconfortos — texto e/ou local do corpo)
+    - `notes` (feedback livre sobre o treino)
+  - Esse feedback é visível ao treinador e é insumo para ajustar o planejamento. Serve para comparar **planejado × realizado**.
+- **StravaConnection** — vínculo do aluno com o Strava: tokens OAuth, `athleteId`, status. Alimenta `WorkoutLog` e `PersonalRecord` automaticamente.
+
+### Aderência & engajamento (derivado de WorkoutLog)
+- **Sequência de atividade (streak):** nº de dias seguidos em que o aluno esteve ativo (treino concluído). Calculado a partir do `WorkoutLog`, exibido no app do aluno como uma **pílula visual** (ex.: "🔥 7 dias") — elemento motivacional.
+- **Monitor de aderência:** um verificador observa `WorkoutDay`s planejados que passam sem `WorkoutLog` (pulados). Ao detectar **N treinos pulados em sequência** (N configurável, ex.: 3), dispara um **alerta ao treinador** (no dashboard + push/email) para que ele intervenha. Roda como job agendado, não em tempo real.
+- Não são entidades novas: streak e aderência são **cálculos** sobre `WorkoutDay` + `WorkoutLog`. O alerta pode reusar o canal de notificação/`Message`.
 - **BodyMetric** — histórico corporal (peso, %gordura, medidas, data). Série temporal para gráficos.
 - **PersonalRecord (PR)** — melhores tempos por distância (5k, 10k, 21k, 42k): `distance`, `time`, `achievedAt`.
 
 ### Metas
 - **Goal** — definida em conjunto por aluno e treinador: `targetRace` (5k/10k/21k/42k/outro), `raceDate`, `targetTime`, status. Vincula-se ao aluno e opcionalmente a um `Plan`. É o "norte" do planejamento.
+- **Página da meta (visão macro):** cada `Goal` gera uma tela que mostra **todo o treino do plano separado por semanas** — uma visão de periodização para acompanhar o progresso rumo à meta. Não é entidade nova; é uma **visão** que agrupa os `WorkoutDay` do `Plan` vinculado por semana, mostrando por semana: volume planejado, o que já foi concluído (via `WorkoutLog`) e quanto falta até a `raceDate`. Aluno e treinador veem a mesma página.
 
 ### Comunicação
 - **Message** — chat 1:1 treinador↔aluno: `senderId`, `coachStudentId` (a conversa vive dentro do vínculo), `text`, `sentAt`, `readAt`.
@@ -109,7 +125,7 @@ O treinador sobe a planilha que já usa (formato livre); o RunUp a transforma em
 ### Login
 - **Google**, **Strava** e **cadastro por email pessoal**.
 - Tokens **JWT** de acesso (curtos) + **refresh token** (longo, rotacionado).
-- **Oportunidade Strava (fase seguinte):** importar automaticamente corridas e RPs via API do Strava, alimentando `WorkoutLog` e `PersonalRecord` sem digitação.
+- **Integração Strava (parte do loop de valor, não fase 2):** conectar o Strava permite importar automaticamente as atividades e casá-las com o `WorkoutDay` planejado (fecha o ciclo planejado × realizado sem digitação), além de alimentar `PersonalRecord`. Ver `StravaConnection` no modelo de dados. O check manual continua como alternativa para quem não usa Strava.
 - **Requisito de publicação (iOS):** a Apple exige "Sign in with Apple" quando há login social; adicionar **apenas no build iOS**.
 
 ### Papéis
@@ -127,7 +143,8 @@ O treinador sobe a planilha que já usa (formato livre); o RunUp a transforma em
 
 - **API padronizada:** todo erro no formato `{ code, message, details }` com HTTP status correto; cliente traduz `code` para PT-BR.
 - **Import de Excel:** falhas (planilha corrompida, IA indisponível, JSON inválido) nunca perdem o trabalho — caem na tela de revisão com o que deu para extrair + aviso. Timeout da IA → "tentar novamente".
-- **Offline no mobile:** `WorkoutLog` salvo localmente e sincronizado depois (fila de sync). Conflitos: última escrita vence no log do aluno.
+- **Offline no mobile:** app é **online-first** (execução acontece fora do app, então não há corrida ao vivo para gravar). O check de conclusão é uma ação leve; se falhar por falta de rede, faz retry simples. Sem fila de sync complexa.
+- **Import do Strava:** atividade sem `WorkoutDay` correspondente (aluno correu num dia sem treino planejado) → guardada como atividade avulsa, não descartada. Token expirado → refresh automático; se revogado, avisar o aluno para reconectar.
 - **Pagamentos:** falha no gateway não derruba a conta — período de graça + retry antes de rebaixar de tier.
 - **Observabilidade:** erros com correlação (request id) via Sentry.
 
@@ -157,7 +174,6 @@ Testes proporcionais ao risco. Pirâmide:
 
 ## 8. Requisitos / decisões pendentes (fora do MVP)
 
-- Integração de importação automática via Strava (corridas + RPs).
 - "Sign in with Apple" no build iOS antes de publicar.
 - Conta única não suporta treinador que também treina como aluno (exigiria segunda conta).
 - Gateway de pagamento definitivo (Stripe vs. Pagar.me) a decidir na implementação.
@@ -173,7 +189,8 @@ Testes proporcionais ao risco. Pirâmide:
 | Plan / PlanAssignment | Plano de treino e sua atribuição a um aluno |
 | WorkoutDay / Block / BlockItem | Estrutura hierárquica de um dia de treino |
 | Exercise | Biblioteca de exercícios |
-| WorkoutLog | Execução real do aluno |
+| WorkoutLog | Confirmação de execução (check manual ou import Strava) |
+| StravaConnection | Vínculo OAuth do aluno com o Strava |
 | BodyMetric / PersonalRecord | Progresso corporal e melhores tempos |
 | Goal | Prova alvo / meta |
 | Message | Chat treinador↔aluno |
