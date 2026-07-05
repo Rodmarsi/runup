@@ -1,7 +1,7 @@
 # RunUp — Plano de Implementação do MVP
 
 **Data:** 2026-07-04
-**Base:** [2026-07-04-runup-design.md](./2026-07-04-runup-design.md)
+**Base:** [2026-07-04-runup-design.md](./2026-07-04-runup-design.md) · [Backlog completo de features (MVP1/1.5/2)](./2026-07-04-runup-feature-backlog.md)
 **Status:** Plano proposto
 
 ---
@@ -24,11 +24,13 @@ Mais o **diferencial** (importação de planilha com IA) e a **monetização** (
 | Papéis | student / coach (papel único) | — |
 | Vínculo | Treinador convida → aluno aceita | Marketplace de descoberta/busca de treinadores |
 | Planos | Criar plano custom no app + atribuir | Planos genéricos prontos do RunUp |
-| Treino | Blocos (running / strength / mobility / free) | Biblioteca de exercícios com mídia/gif rica |
+| Treino | Blocos (running / strength / mobility / free) com **roles** (warmup/main/cooldown) e **intervalos** (10×400m…) + **templates** (Tiro, Longão…) + duplicar + status parcial | Treinos recorrentes, aplicação em massa, fotos (MVP1.5); biblioteca de exercícios com mídia rica |
+| Comunicação | Chat + **comentários por treino** | Reações, solicitação de alteração, notificações de alteração (MVP1.5); áudio (MVP2) |
+| IA | Estimar tempo de prova + **explicar treino** + **resumo semanal** | Planos personalizados, ajuste por feedback, overtraining (MVP2) |
 | Execução | Calendário + **check de conclusão** (manual) + **import Strava** | Rastreamento GPS/gravação ao vivo (fora do produto) |
 | Import Excel | Pipeline completo com tela de revisão | — |
 | Perfil | Métricas corporais + RPs (5/10/21/42k) manuais | Gráficos avançados / insights |
-| Meta | Definição da prova + **página da meta** (treino por semanas) | Ajuste automático do plano por feedback |
+| Meta | Definição da prova + **página da meta** (treino por semanas) + **preditor de tempo** (Riegel/VDOT) | Preditor por tendência de condicionamento; ajuste automático do plano por feedback |
 | Feedback | RPE + dores + texto livre no check | Alertas automáticos ao treinador por dor recorrente |
 | Engajamento | **Streak** (pílula de dias seguidos) + **alerta de treinos pulados** ao treinador | Gamificação (conquistas, ranking) |
 | Mensagens | Chat 1:1 treinador↔aluno | Notificações push ricas, mídia no chat |
@@ -74,10 +76,11 @@ Cada milestone é entregável e testável antes do próximo. Dependências respe
 
 ### M3 — Planos & treinos (núcleo)
 **Meta:** treinador cria e atribui treino; aluno vê e **confirma execução**.
-- `Plan`, `PlanAssignment`, `WorkoutDay`, `Block`, `BlockItem`, `Exercise`, `WorkoutLog`
-- Web: construtor de plano (dias + blocos: running/strength/mobility/free)
-- Mobile aluno: **calendário semanal**, tela do dia, **check de conclusão** com **feedback** (`WorkoutLog source=manual`): distância/tempo opcionais + `perceivedEffort` (RPE), `pain` (dores) e `notes` (feedback livre)
-- `Goal` (prova alvo) definida por aluno+treinador + **página da meta** (visão macro: todo o treino separado por semanas, com progresso rumo à `raceDate`)
+- `Plan`, `PlanAssignment`, `WorkoutDay`, `Block` (com `role` warmup/main/cooldown), `BlockItem` (com **estrutura de intervalos**: reps × dist/tempo + recuperação), `Exercise`, `WorkoutLog`, `WorkoutTemplate`, `WorkoutComment`
+- Web: **construtor visual de treino** (Aquecimento → Principal → Desaquecimento), biblioteca de **templates** (Tiro, Intervalado, Longão, Regenerativo, Tempo Run…), **duplicar treino**
+- Mobile aluno: **calendário semanal**, tela do dia, **check de conclusão** com **feedback** (`WorkoutLog source=manual`): status done/**partial**/skipped, distância/tempo opcionais + `perceivedEffort` (RPE), `pain` (dores) e `notes` (feedback livre)
+- **Comentários por treino** (`WorkoutComment`): thread treinador↔aluno contextualizada no treino
+- `Goal` (prova alvo) definida por aluno+treinador + **página da meta** (visão macro: todo o treino separado por semanas, progresso rumo à `raceDate` + **contagem regressiva**)
 - Testes: geração de `WorkoutDay`s, autorização (aluno A não vê plano do B)
 
 **Saída:** loop de valor central (planejar → atribuir → confirmar) completo ponta a ponta.
@@ -85,12 +88,22 @@ Cada milestone é entregável e testável antes do próximo. Dependências respe
 ### M3.5 — Integração Strava
 **Meta:** aluno conecta o Strava e a execução vira automática.
 - `StravaConnection` (OAuth do Strava, tokens, refresh)
-- Webhook/pull de atividades → casar com `WorkoutDay` planejado → gerar `WorkoutLog source=strava`
+- Webhook/pull de atividades → casar com `WorkoutDay` planejado → gerar `WorkoutLog source=strava` com **métricas completas** (FC, cadência, pace médio, altimetria, **splits por km**)
 - Atividade sem treino planejado → guardada como avulsa
 - Import de `PersonalRecord` a partir do histórico do Strava
 - Testes: casamento atividade↔dia, token expirado/revogado
 
 **Saída:** aluno com Strava fecha o ciclo planejado × realizado sem digitar nada.
+
+### M3.6 — Preditor de tempo de prova (fase 1)
+**Meta:** estimar o tempo do aluno na prova alvo a partir dos treinos já feitos.
+- Módulo em `packages/core` com **Riegel** e **VDOT** (funções puras, fáceis de testar)
+- Seleção dos melhores esforços recentes (de `WorkoutLog` com dados / `PersonalRecord` / Strava)
+- Exibir na **página da meta**: estimativa atual + evolução semana a semana, rotulada como estimativa com indicação de confiança
+- Depende de dados reais de distância+tempo → funciona melhor após o M3.5 (Strava)
+- Testes unitários com casos conhecidos (ex.: 10k em X → maratona em Y)
+
+**Saída:** página da meta mostra a projeção de tempo de prova, recalculada a cada treino.
 
 ### M4 — Importação de Excel com IA
 **Meta:** treinador sobe planilha livre e vira plano.
@@ -104,6 +117,8 @@ Cada milestone é entregável e testável antes do próximo. Dependências respe
 **Meta:** acompanhamento e comunicação.
 - `BodyMetric` + `PersonalRecord` (entrada manual; os RPs do Strava já vêm do M3.5) e agregações do `WorkoutLog`
 - Perfil do aluno: RPs por distância, evolução de métricas, corridas
+- **Dashboard de estatísticas:** km semanal/mensal, tempo total treinado, evolução de pace e FC, volume por tipo de treino
+- **IA (leve):** "explicar este treino" (prompt sobre o `WorkoutDay`) e **resumo semanal** da evolução
 - **Streak:** cálculo de dias seguidos ativos + **pílula visual** no app do aluno
 - **Monitor de aderência:** job agendado que detecta N treinos pulados em sequência → **alerta ao treinador** (dashboard + push/email)
 - `Message`: chat 1:1 dentro do vínculo (canal reusado pelos alertas)
@@ -130,7 +145,8 @@ Cada milestone é entregável e testável antes do próximo. Dependências respe
 1. **M0** (fundação) — bloqueia tudo, fazer primeiro.
 2. **M1 → M2 → M3** em ordem (dependências diretas).
 3. **M3.5 (Strava)** logo após o M3 — depende do `WorkoutLog`/`WorkoutDay` estáveis.
-4. **M4** pode começar em paralelo ao M3 assim que o schema de `Block`/`BlockItem` estiver estável.
-5. **M5** por último, depois valida com E2E.
+4. **M3.6 (preditor)** após o M3.5 — depende de dados reais de ritmo/tempo.
+5. **M4** pode começar em paralelo ao M3 assim que o schema de `Block`/`BlockItem` estiver estável.
+6. **M5** por último, depois valida com E2E.
 
 **Primeiro passo concreto:** iniciar o **M0** — montar o monorepo (pnpm + Turborepo + os packages base). É o desbloqueador de todo o resto.

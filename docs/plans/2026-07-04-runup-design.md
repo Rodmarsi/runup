@@ -59,12 +59,13 @@ runup/
 ### Conteúdo de treino
 - **Plan** — `ownerId`, `type` (`generic` = pronto do RunUp | `custom` = feito por treinador), duração, objetivo.
 - **PlanAssignment** — atribui um `Plan` a um aluno (por treinador ou auto-atribuído no caso genérico). Guarda data de início.
-- **WorkoutDay** — um dia dentro do plano (ex.: "Semana 2, Terça"). Ordem/data e status (`pending` | `done` | `skipped`).
-- **Block** — bloco dentro do dia. `kind`: `running` | `strength` | `mobility` | `free`.
+- **WorkoutDay** — um dia dentro do plano (ex.: "Semana 2, Terça"). Ordem/data e status (`pending` | `done` | `partial` | `skipped`).
+- **Block** — bloco dentro do dia. `kind`: `running` | `strength` | `mobility` | `free` + `role`: `warmup` | `main` | `cooldown` (permite montar visualmente Aquecimento → Principal → Desaquecimento).
 - **BlockItem** — item concreto do bloco:
-  - `running` → distância/tempo, ritmo alvo, tipo (fácil/tiro/longo)
+  - `running` → distância/tempo, ritmo alvo, tipo (fácil/tiro/longo/tempo/regenerativo) + **estrutura de repetição** para intervalados: `reps` × (distância ou tempo) + recuperação (ex.: 10×400m c/ 90s trote)
   - `strength` / `mobility` → referência a `Exercise` + séries/reps/carga
   - `free` → texto livre (`notes`)
+- **WorkoutTemplate** — treino reusável, do sistema ou do treinador, com `category` (Tiro, Intervalado, Longão, Regenerativo, Tempo Run…). Base da **biblioteca de treinos**, de "duplicar treino" e dos modelos do treinador. Aplicar um template gera `Block`s/`BlockItem`s num `WorkoutDay`.
 - **Exercise** — biblioteca compartilhada (nome, grupo muscular, mídia/gif).
 
 ### Execução & progresso do aluno
@@ -75,7 +76,10 @@ runup/
     - `perceivedEffort` (RPE / sensação de esforço, ex.: escala 1–10)
     - `pain` (dores/desconfortos — texto e/ou local do corpo)
     - `notes` (feedback livre sobre o treino)
+  - **Métricas da atividade** (preenchidas manualmente ou vindas do Strava): FC média/máx, cadência, pace médio, altimetria e **splits (pace por km)**.
+  - Status de execução: `done` | `partial` | `skipped`.
   - Esse feedback é visível ao treinador e é insumo para ajustar o planejamento. Serve para comparar **planejado × realizado**.
+- **WorkoutComment** — thread de comentários por treino (`WorkoutDay`/`WorkoutLog`), entre treinador e aluno. Complementa o chat geral com conversa **contextualizada no treino**. (Futuro: reações rápidas 👍🔥👏 e solicitação de alteração como tipos de comentário.)
 - **StravaConnection** — vínculo do aluno com o Strava: tokens OAuth, `athleteId`, status. Alimenta `WorkoutLog` e `PersonalRecord` automaticamente.
 
 ### Aderência & engajamento (derivado de WorkoutLog)
@@ -88,6 +92,11 @@ runup/
 ### Metas
 - **Goal** — definida em conjunto por aluno e treinador: `targetRace` (5k/10k/21k/42k/outro), `raceDate`, `targetTime`, status. Vincula-se ao aluno e opcionalmente a um `Plan`. É o "norte" do planejamento.
 - **Página da meta (visão macro):** cada `Goal` gera uma tela que mostra **todo o treino do plano separado por semanas** — uma visão de periodização para acompanhar o progresso rumo à meta. Não é entidade nova; é uma **visão** que agrupa os `WorkoutDay` do `Plan` vinculado por semana, mostrando por semana: volume planejado, o que já foi concluído (via `WorkoutLog`) e quanto falta até a `raceDate`. Aluno e treinador veem a mesma página.
+- **Estimativa de tempo de prova (preditor):** na página da meta, uma projeção de **quanto tempo o aluno faria na prova alvo** com base nos treinos já efetuados. Recalculada a cada novo treino e exibida evoluindo semana a semana rumo à `raceDate`.
+  - **Método (fase 1):** fórmulas de corrida consagradas — **Riegel** (`T2 = T1 × (D2/D1)^1.06`) e/ou **VDOT** (Jack Daniels) — aplicadas aos melhores esforços recentes (RPs, tiros, longões) vindos de `WorkoutLog`/`PersonalRecord`/Strava.
+  - **Dependência de dados:** só funciona com treinos que tenham **distância + tempo reais** (check com dados preenchidos ou atividade importada do Strava). Um check seco não alimenta o preditor.
+  - **Fase 2 (futuro):** modelo de **tendência de condicionamento** — extrapolar a curva de evolução do aluno ao longo do bloco, capturando progressão em vez de um único ponto.
+  - Sempre rotulada como **estimativa** (não garantia), com indicação da confiança conforme a quantidade/qualidade dos dados.
 
 ### Comunicação
 - **Message** — chat 1:1 treinador↔aluno: `senderId`, `coachStudentId` (a conversa vive dentro do vínculo), `text`, `sentAt`, `readAt`.
@@ -174,6 +183,8 @@ Testes proporcionais ao risco. Pirâmide:
 
 ## 8. Requisitos / decisões pendentes (fora do MVP)
 
+> O backlog completo de features com fases (MVP1 / MVP1.5 / MVP2) está em [2026-07-04-runup-feature-backlog.md](./2026-07-04-runup-feature-backlog.md) — inclui wellness (humor/fadiga/sono), metas por métrica, notificações, relógios (Garmin/Coros/Apple Watch), IA avançada, conteúdo educativo, saúde/lesões e ferramentas extras do treinador.
+
 - "Sign in with Apple" no build iOS antes de publicar.
 - Conta única não suporta treinador que também treina como aluno (exigiria segunda conta).
 - Gateway de pagamento definitivo (Stripe vs. Pagar.me) a decidir na implementação.
@@ -187,7 +198,9 @@ Testes proporcionais ao risco. Pirâmide:
 | User | Pessoa (aluno ou treinador) |
 | CoachStudent | Vínculo treinador↔aluno |
 | Plan / PlanAssignment | Plano de treino e sua atribuição a um aluno |
-| WorkoutDay / Block / BlockItem | Estrutura hierárquica de um dia de treino |
+| WorkoutDay / Block / BlockItem | Estrutura hierárquica de um dia de treino (roles warmup/main/cooldown, intervalos) |
+| WorkoutTemplate | Biblioteca de treinos reusáveis (Tiro, Longão, Tempo Run…) |
+| WorkoutComment | Comentários contextualizados por treino |
 | Exercise | Biblioteca de exercícios |
 | WorkoutLog | Confirmação de execução (check manual ou import Strava) |
 | StravaConnection | Vínculo OAuth do aluno com o Strava |
