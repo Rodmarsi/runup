@@ -1,0 +1,253 @@
+// Schema do RunUp — MVP1.
+// Modelo validado em docs/plans/2026-07-04-runup-design.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  student
+  coach
+}
+
+enum CoachStudentStatus {
+  pending
+  active
+  ended
+}
+
+enum SubscriptionTier {
+  free
+  pro
+  elite
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  canceled
+}
+
+enum PlanType {
+  generic
+  custom
+}
+
+enum WorkoutDayStatus {
+  pending
+  done
+  partial
+  skipped
+}
+
+enum WorkoutLogSource {
+  manual
+  strava
+}
+
+enum GoalStatus {
+  active
+  achieved
+  abandoned
+}
+
+model User {
+  id        String   @id @default(uuid())
+  role      UserRole
+  name      String
+  email     String   @unique
+  avatarUrl String?
+  createdAt DateTime @default(now())
+
+  coachLinks     CoachStudent[]    @relation("CoachLinks")
+  studentLinks   CoachStudent[]    @relation("StudentLinks")
+  ownedPlans     Plan[]
+  subscription   Subscription?
+  workoutLogs    WorkoutLog[]
+  bodyMetrics    BodyMetric[]
+  personalBests  PersonalRecord[]
+  goals          Goal[]
+  sentMessages   Message[]
+  templates      WorkoutTemplate[]
+  stravaLink     StravaConnection?
+}
+
+model CoachStudent {
+  id        String             @id @default(uuid())
+  coach     User               @relation("CoachLinks", fields: [coachId], references: [id])
+  coachId   String
+  student   User               @relation("StudentLinks", fields: [studentId], references: [id])
+  studentId String
+  status    CoachStudentStatus @default(pending)
+  createdAt DateTime           @default(now())
+  messages  Message[]
+
+  @@unique([coachId, studentId])
+  @@index([coachId])
+  @@index([studentId])
+}
+
+model Subscription {
+  id               String             @id @default(uuid())
+  coach            User               @relation(fields: [coachId], references: [id])
+  coachId          String             @unique
+  tier             SubscriptionTier   @default(free)
+  status           SubscriptionStatus @default(active)
+  currentPeriodEnd DateTime?
+}
+
+model Plan {
+  id            String           @id @default(uuid())
+  owner         User             @relation(fields: [ownerId], references: [id])
+  ownerId       String
+  type          PlanType         @default(custom)
+  title         String
+  durationWeeks Int
+  createdAt     DateTime         @default(now())
+  workoutDays   WorkoutDay[]
+  assignments   PlanAssignment[]
+  goals         Goal[]
+}
+
+model PlanAssignment {
+  id        String   @id @default(uuid())
+  plan      Plan     @relation(fields: [planId], references: [id])
+  planId    String
+  studentId String
+  startDate DateTime
+
+  @@index([studentId])
+}
+
+model WorkoutDay {
+  id       String           @id @default(uuid())
+  plan     Plan             @relation(fields: [planId], references: [id])
+  planId   String
+  week     Int
+  date     DateTime
+  status   WorkoutDayStatus @default(pending)
+  // Blocos e itens guardados como JSON (estrutura em @runup/types).
+  blocks   Json
+  logs     WorkoutLog[]
+  comments WorkoutComment[]
+
+  @@index([planId])
+}
+
+model Exercise {
+  id          String  @id @default(uuid())
+  name        String
+  muscleGroup String?
+  mediaUrl    String?
+}
+
+model WorkoutTemplate {
+  id       String @id @default(uuid())
+  owner    User   @relation(fields: [ownerId], references: [id])
+  ownerId  String
+  title    String
+  category String
+  blocks   Json
+
+  @@index([ownerId])
+}
+
+model WorkoutLog {
+  id                String           @id @default(uuid())
+  workoutDay        WorkoutDay       @relation(fields: [workoutDayId], references: [id])
+  workoutDayId      String
+  student           User             @relation(fields: [studentId], references: [id])
+  studentId         String
+  source            WorkoutLogSource @default(manual)
+  completedAt       DateTime         @default(now())
+  distanceMeters    Int?
+  durationSeconds   Int?
+  avgPaceSecPerKm   Int?
+  avgHeartRate      Int?
+  cadence           Int?
+  elevationGainM    Int?
+  splits            Json?
+  perceivedEffort   Int?
+  pain              String?
+  notes             String?
+
+  @@index([studentId])
+  @@index([workoutDayId])
+}
+
+model BodyMetric {
+  id         String   @id @default(uuid())
+  student    User     @relation(fields: [studentId], references: [id])
+  studentId  String
+  date       DateTime
+  weightKg   Float?
+  bodyFatPct Float?
+
+  @@index([studentId])
+}
+
+model PersonalRecord {
+  id          String   @id @default(uuid())
+  student     User     @relation(fields: [studentId], references: [id])
+  studentId   String
+  distance    String
+  timeSeconds Int
+  achievedAt  DateTime
+
+  @@index([studentId])
+}
+
+model Goal {
+  id                String     @id @default(uuid())
+  student           User       @relation(fields: [studentId], references: [id])
+  studentId         String
+  plan              Plan?      @relation(fields: [planId], references: [id])
+  planId            String?
+  targetRace        String
+  raceName          String?
+  raceDate          DateTime
+  targetTimeSeconds Int?
+  status            GoalStatus @default(active)
+
+  @@index([studentId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  coachStudent   CoachStudent @relation(fields: [coachStudentId], references: [id])
+  coachStudentId String
+  sender         User         @relation(fields: [senderId], references: [id])
+  senderId       String
+  text           String
+  sentAt         DateTime     @default(now())
+  readAt         DateTime?
+
+  @@index([coachStudentId])
+}
+
+model WorkoutComment {
+  id           String     @id @default(uuid())
+  workoutDay   WorkoutDay @relation(fields: [workoutDayId], references: [id])
+  workoutDayId String
+  authorId     String
+  text         String
+  createdAt    DateTime   @default(now())
+
+  @@index([workoutDayId])
+}
+
+model StravaConnection {
+  id           String   @id @default(uuid())
+  student      User     @relation(fields: [studentId], references: [id])
+  studentId    String   @unique
+  athleteId    String
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  connectedAt  DateTime @default(now())
+}

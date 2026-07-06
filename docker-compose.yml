@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: runup-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: runup
+      POSTGRES_PASSWORD: runup
+      POSTGRES_DB: runup
+    ports:
+      - "5432:5432"
+    volumes:
+      - runup-db-data:/var/lib/postgresql/data
+
+volumes:
+  runup-db-data:

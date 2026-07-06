@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "RunUp",
+    "slug": "runup",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#121110",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.runup.app"
+    },
+    "android": {
+      "package": "com.runup.app"
+    }
+  }
+}
