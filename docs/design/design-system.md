@@ -243,6 +243,11 @@ Ordem: cabeçalho **Prova alvo** sem fundo (overline + nome + distância/data + 
 - **Precisam de atenção:** cards dos alunos sinalizados pelo monitor de aderência (treinos pulados → ação "Mensagem") e por dor recorrente (→ ação "Revisar"). 
 - **Lista de alunos:** linhas com avatar, nome, meta + semana do ciclo ("Meia PoA · sem 6/12"), barra de progresso da semana, próximo treino, chip de status (verde "Em dia" / vermelho "N pulados" / laranja "Dor · região").
 
+### Construtor de treino
+- **Cabeçalho:** voltar + "Novo treino" + contexto (aluno · data · semana) · ações: "Salvar como template" (secundário) e farol "Atribuir treino" (Brasa).
+- **Canvas (esquerda):** nome do treino + seletor de categoria; blocos por `role` (labels overline AQUECIMENTO/PRINCIPAL/DESAQUECIMENTO), cada card com alça de arrastar, ícone do tipo, editar, excluir. Bloco em edição: borda `rgba(255,85,0,0.35)`; editor de intervalos com campos REPETIÇÕES / DISTÂNCIA / PACE ALVO / RECUPERAÇÃO. Rodapé: "+ Adicionar bloco" tracejado com os 4 kinds (Corrida/Força/Mobilidade/Livre).
+- **Painel direito:** card Resumo (distância, duração, blocos, intensidade — calculado ao vivo) + card Templates (`WorkoutTemplate`: buscar, lista por categoria, `+` insere no canvas, link "+ Criar template" no rodapé). Criar template = 2 caminhos: salvar treino montado ou criar direto (sem aluno/data).
+
 ### Regras transversais de tela
 - **Um hero laranja por tela** (regra do farol). O resto na escada neutra.
 - Tipo de treino identificado por **texto**, não por cor de borda (identidade mono-acento) — sem as bordas coloridas por categoria das referências.
