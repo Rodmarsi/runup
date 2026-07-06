@@ -234,6 +234,15 @@ Aberta ao concluir. Ordem: título/data do treino → **status** em segmento (Co
 ### Página da meta
 Ordem: cabeçalho **Prova alvo** sem fundo (overline + nome + distância/data + 3 cards neutros: Faltam / Meta / Estimativa — estimativa em `orange.400`) → **Progresso do plano** (card no estilo aprovado: título + "Sua prova: DATA" + emblema de distância; **barra segmentada por semanas** — concluídas em `orange.500`, atual meio-preenchida, futuras em `surface.4`; dois números grandes "Semanas concluídas X/Y" e "Distância"; divisória tracejada + linha da prova com bandeira quadriculada) → **Estimativa de tempo** (card com curva do preditor caindo rumo à linha da meta + delta). Tela sóbria, sem hero laranja — hierarquia por conteúdo. Segmentos/curva são micro-acentos.
 
+## 10.1 Blueprints de telas (dashboard web do treinador)
+
+### Painel (dashboard)
+- **Sidebar** (`surface.0`): logo RunUp; itens Painel · Alunos (badge com nº) · Treinos · Importar (Excel) · Chat (badge não lidas); item ativo = card `surface.2` + hairline + ícone `orange.400`. Na base, **card de assinatura**: tier atual, aviso ao exceder limite de alunos, CTA "Fazer upgrade" (`orange.500`).
+- **Topo do conteúdo** (`surface.1`): saudação + contexto do dia ("N treinos acontecem hoje") · botão primário "+ Novo treino" · sino.
+- **Linha de resumo (3 cards):** farol = Volume da equipe (Brasa Radiante, km + delta) · Aderência (% + "X de Y treinos") · Alertas (nº, separado por tipo: aderência/dor).
+- **Precisam de atenção:** cards dos alunos sinalizados pelo monitor de aderência (treinos pulados → ação "Mensagem") e por dor recorrente (→ ação "Revisar"). 
+- **Lista de alunos:** linhas com avatar, nome, meta + semana do ciclo ("Meia PoA · sem 6/12"), barra de progresso da semana, próximo treino, chip de status (verde "Em dia" / vermelho "N pulados" / laranja "Dor · região").
+
 ### Regras transversais de tela
 - **Um hero laranja por tela** (regra do farol). O resto na escada neutra.
 - Tipo de treino identificado por **texto**, não por cor de borda (identidade mono-acento) — sem as bordas coloridas por categoria das referências.
