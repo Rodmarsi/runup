@@ -228,6 +228,12 @@ Fora da home (decisões YAGNI): sem seção social/"amigos"; chat mora na linha 
 ### Detalhe do dia
 Blocos por `role` (Aquecimento → Principal → Desaquecimento), cada um: label overline + card. Bloco principal mostra estrutura de intervalos (reps @ pace + recuperação) com indicador de repetições. Comentário do treinador (`WorkoutComment`) em `surface.3`. Farol = CTA "Concluir treino" (Brasa); abaixo, atalho para parcial/não realizado.
 
+### Registrar treino (check com feedback)
+Aberta ao concluir. Ordem: título/data do treino → **status** em segmento (Concluí / Parcial / Não fiz, ativo em `orange.500`) → atalho **Importar do Strava** (se houver atividade detectada, preenche os dados) → cards de dados (distância / tempo / pace, manuais ou do Strava) → **RPE 1–10** em grade de chips + label textual do nível → **dor/desconforto** em chips por região (Nenhuma / Joelho / Panturrilha / …) → **notas para o treinador** (textarea) → CTA "Salvar registro" (Brasa). Gera `WorkoutLog` (+ `WorkoutComment` se houver nota).
+
+### Página da meta
+Ordem: cabeçalho **Prova alvo** sem fundo (overline + nome + distância/data + 3 cards neutros: Faltam / Meta / Estimativa — estimativa em `orange.400`) → **Progresso do plano** (card no estilo aprovado: título + "Sua prova: DATA" + emblema de distância; **barra segmentada por semanas** — concluídas em `orange.500`, atual meio-preenchida, futuras em `surface.4`; dois números grandes "Semanas concluídas X/Y" e "Distância"; divisória tracejada + linha da prova com bandeira quadriculada) → **Estimativa de tempo** (card com curva do preditor caindo rumo à linha da meta + delta). Tela sóbria, sem hero laranja — hierarquia por conteúdo. Segmentos/curva são micro-acentos.
+
 ### Regras transversais de tela
 - **Um hero laranja por tela** (regra do farol). O resto na escada neutra.
 - Tipo de treino identificado por **texto**, não por cor de borda (identidade mono-acento) — sem as bordas coloridas por categoria das referências.
