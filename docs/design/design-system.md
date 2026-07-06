@@ -248,6 +248,12 @@ Ordem: cabeçalho **Prova alvo** sem fundo (overline + nome + distância/data + 
 - **Canvas (esquerda):** nome do treino + seletor de categoria; blocos por `role` (labels overline AQUECIMENTO/PRINCIPAL/DESAQUECIMENTO), cada card com alça de arrastar, ícone do tipo, editar, excluir. Bloco em edição: borda `rgba(255,85,0,0.35)`; editor de intervalos com campos REPETIÇÕES / DISTÂNCIA / PACE ALVO / RECUPERAÇÃO. Rodapé: "+ Adicionar bloco" tracejado com os 4 kinds (Corrida/Força/Mobilidade/Livre).
 - **Painel direito:** card Resumo (distância, duração, blocos, intensidade — calculado ao vivo) + card Templates (`WorkoutTemplate`: buscar, lista por categoria, `+` insere no canvas, link "+ Criar template" no rodapé). Criar template = 2 caminhos: salvar treino montado ou criar direto (sem aluno/data).
 
+### Revisão da importação de Excel
+- **Cabeçalho:** "Importar planilha" + nome do arquivo/abas · indicador de etapas Upload ✓ → Revisão (ativa, `orange.500`) → Confirmar.
+- **Faixa de resumo da IA:** "interpretou N treinos em M semanas — X itens precisam da sua revisão" + filtro "Ver só dúvidas".
+- **Semanas em acordeão:** header `surface.3` (semana · fase · nº treinos · km). Cada linha de treino: dia, ícone, interpretação estruturada, **célula de origem** da planilha (rastreabilidade), e tag de confiança — verde "OK" ou linha destacada (`rgba(255,85,0,0.06)`) com a dúvida explicada + sugestão da IA + ação "Corrigir".
+- **Painel direito:** card Interpretação (semanas/treinos/volume/em dúvida + barra de % de confiança) · card Destino (plano + aluno) · farol "Confirmar e criar plano" (Brasa) + garantia "Nada é salvo até você confirmar".
+
 ### Regras transversais de tela
 - **Um hero laranja por tela** (regra do farol). O resto na escada neutra.
 - Tipo de treino identificado por **texto**, não por cor de borda (identidade mono-acento) — sem as bordas coloridas por categoria das referências.
