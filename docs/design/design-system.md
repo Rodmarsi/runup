@@ -202,7 +202,40 @@ Números grandes sempre com unidade menor e em `text.secondary` (ex.: **482** km
 
 ---
 
-## 10. Implementação (`packages/ui`)
+## 10. Blueprints de telas (app do aluno)
+
+Estruturas validadas. Referências de inspiração: apps fitness (semana com status, métricas com comparativo, anel de meta) e apps de agenda/wellness (saudação compacta, seções "label + ver todas"). Acento sempre laranja (nas referências era verde-neon).
+
+### Home / "Hoje"
+Ordem vertical (topo → base):
+1. **Cabeçalho:** avatar + saudação ("Bom dia, {nome}") · à direita **pílula de streak** (🔥 N em `orange.dim`) + sino de notificação.
+2. **Sua semana:** label overline + pílula "Semana X de Y" (navegação do ciclo do plano). Faixa de 7 dias com ponto de status sob cada um: verde = concluído, vermelho = perdido, sem ponto = descanso; dia atual em pílula `orange.500` cheia.
+3. **Treino de hoje (hero/farol):** card em gradiente Brasa Radiante — tipo (overline), título, resumo (dist · pace · duração), botão branco "Iniciar". É o único hero laranja da tela.
+4. **Métricas da semana:** 2 cards lado a lado — distância (com delta vs. anterior em verde) e pace médio (com alvo do treinador).
+5. **Meta semanal:** card horizontal com anel de progresso (%) + "N de M treinos" + chevron para detalhe.
+6. **Próxima prova:** label "+ Ver todas"; card com ícone-alvo, nome/distância/data + estimativa do preditor, badge de countdown (dias).
+7. **Treinador:** card com iniciais, "Seu treinador · {nome}", atalho para chat.
+8. **Tab bar** (pílula): Hoje · Treinos · Agenda · Evolução. Item ativo em `orange.dim`/`orange.400`.
+
+Fora da home (decisões YAGNI): sem seção social/"amigos"; chat mora na linha do treinador e no detalhe do treino, não na tab bar.
+
+### Treinos (lista da semana)
+1. Título "Treinos" + seletor "Semana X de Y".
+2. Faixa de dias (igual à home).
+3. **Treino de hoje destacado no topo**, acima da lista, em Brasa Radiante ("Iniciar" + "Detalhes").
+4. **Lista da semana:** um card por treino com ícone de status (check verde = concluído, X vermelho = perdido, círculo tracejado = futuro). Card concluído expande com faixa interna `surface.3` mostrando o **realizado** (dados do Strava ou check manual: distância/tempo/pace/RPE). Treino perdido oferece atalho "Falar c/ treinador".
+
+### Detalhe do dia
+Blocos por `role` (Aquecimento → Principal → Desaquecimento), cada um: label overline + card. Bloco principal mostra estrutura de intervalos (reps @ pace + recuperação) com indicador de repetições. Comentário do treinador (`WorkoutComment`) em `surface.3`. Farol = CTA "Concluir treino" (Brasa); abaixo, atalho para parcial/não realizado.
+
+### Regras transversais de tela
+- **Um hero laranja por tela** (regra do farol). O resto na escada neutra.
+- Tipo de treino identificado por **texto**, não por cor de borda (identidade mono-acento) — sem as bordas coloridas por categoria das referências.
+- Toda seção usa label overline (10px, caps, `text.muted`) + opcional "Ver todas" à direita.
+
+---
+
+## 11. Implementação (`packages/ui`)
 
 - Tokens exportados como objeto TS (`tokens.ts`) consumido por React Native (StyleSheet) e web (Tailwind config / CSS vars)
 - Gradientes: `expo-linear-gradient` no mobile; CSS no web — mesmas paradas de cor definidas na seção 6
