@@ -11,9 +11,11 @@ import { color } from "@runup/ui/tokens";
 import { AuthProvider, useAuth } from "./src/auth.js";
 import { NavProvider, useNav } from "./src/nav.js";
 import { LoginScreen } from "./src/screens/LoginScreen.js";
-import { HomeScreen } from "./src/screens/HomeScreen.js";
+import { MainTabs } from "./src/screens/MainTabs.js";
 import { DayDetailScreen } from "./src/screens/DayDetailScreen.js";
 import { CheckinScreen } from "./src/screens/CheckinScreen.js";
+import { GoalScreen } from "./src/screens/GoalScreen.js";
+import { ChatScreen } from "./src/screens/ChatScreen.js";
 
 function Router() {
   const { route } = useNav();
@@ -22,8 +24,12 @@ function Router() {
       return <DayDetailScreen dayId={route.dayId} />;
     case "checkin":
       return <CheckinScreen dayId={route.dayId} />;
+    case "goal":
+      return <GoalScreen goalId={route.goalId} />;
+    case "chat":
+      return <ChatScreen linkId={route.linkId} withName={route.withName} />;
     default:
-      return <HomeScreen />;
+      return <MainTabs />;
   }
 }
 

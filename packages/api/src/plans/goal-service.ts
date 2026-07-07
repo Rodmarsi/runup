@@ -68,6 +68,14 @@ export class GoalService {
     });
   }
 
+  /** Lista as metas do aluno (mais recentes primeiro). */
+  listForStudent(studentId: string) {
+    return this.db.goal.findMany({
+      where: { studentId },
+      orderBy: { raceDate: "asc" },
+    });
+  }
+
   /** Overview da meta: treino agrupado por semana + contagem de concluídos. */
   async overview(
     userId: string,

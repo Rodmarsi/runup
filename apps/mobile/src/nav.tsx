@@ -3,7 +3,9 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 export type Route =
   | { name: "home" }
   | { name: "day"; dayId: string }
-  | { name: "checkin"; dayId: string };
+  | { name: "checkin"; dayId: string }
+  | { name: "goal"; goalId: string }
+  | { name: "chat"; linkId: string; withName: string };
 
 interface Nav {
   route: Route;

@@ -7,6 +7,12 @@ import {
   type WorkoutDayDetailDto,
   type Stats,
   type GoalOverview,
+  type GoalDto,
+  type PersonalRecordDto,
+  type ConversationDto,
+  type MessageDto,
+  type StravaStatus,
+  type StravaSyncResult,
   type LogWorkoutInput,
 } from "./types.js";
 
@@ -68,8 +74,38 @@ export class RunUpClient {
     return this.request<Stats>("GET", "/me/stats");
   }
 
+  goals(): Promise<GoalDto[]> {
+    return this.request<GoalDto[]>("GET", "/me/goals");
+  }
+
   goalOverview(goalId: string): Promise<GoalOverview> {
     return this.request<GoalOverview>("GET", `/goals/${goalId}/overview`);
+  }
+
+  personalRecords(): Promise<PersonalRecordDto[]> {
+    return this.request<PersonalRecordDto[]>("GET", "/me/personal-records");
+  }
+
+  // --- Mensagens ---
+  conversations(): Promise<ConversationDto[]> {
+    return this.request<ConversationDto[]>("GET", "/conversations");
+  }
+
+  messages(linkId: string): Promise<MessageDto[]> {
+    return this.request<MessageDto[]>("GET", `/conversations/${linkId}/messages`);
+  }
+
+  sendMessage(linkId: string, text: string) {
+    return this.request("POST", `/conversations/${linkId}/messages`, { text });
+  }
+
+  // --- Strava ---
+  stravaStatus(): Promise<StravaStatus> {
+    return this.request<StravaStatus>("GET", "/me/strava");
+  }
+
+  stravaSync(): Promise<StravaSyncResult> {
+    return this.request<StravaSyncResult>("POST", "/me/strava/sync");
   }
 
   private async request<T = unknown>(

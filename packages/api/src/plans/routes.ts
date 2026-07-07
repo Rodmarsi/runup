@@ -67,6 +67,10 @@ export function planRoutes(db: PrismaClient) {
       reply.status(201).send(goal);
     });
 
+    app.get("/me/goals", asStudent, async (request) => {
+      return goals.listForStudent(request.authUser!.id);
+    });
+
     app.get("/goals/:id/overview", authed, async (request) => {
       const { id } = request.params as { id: string };
       const { id: userId, role } = request.authUser!;

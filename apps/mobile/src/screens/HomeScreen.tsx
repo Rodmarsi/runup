@@ -149,15 +149,6 @@ export function HomeScreen() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Tab bar */}
-      <View style={styles.tabbar}>
-        {["Hoje", "Treinos", "Agenda", "Evolução"].map((label, i) => (
-          <View key={label} style={[styles.tab, i === 0 && styles.tabActive]}>
-            <Text style={i === 0 ? styles.tabActiveText : styles.tabText}>{label}</Text>
-          </View>
-        ))}
-      </View>
     </View>
   );
 }
@@ -250,18 +241,4 @@ const styles = StyleSheet.create({
   },
   metricValue: { fontFamily: font.bold, fontSize: 20, color: color.textPrimary, marginTop: 6 },
   metricUnit: { fontFamily: font.medium, fontSize: 11, color: color.textMuted },
-  tabbar: {
-    flexDirection: "row",
-    gap: 4,
-    margin: 14,
-    padding: 6,
-    borderRadius: 99,
-    backgroundColor: color.surface2,
-    borderWidth: 1,
-    borderColor: border.hairline,
-  },
-  tab: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 99 },
-  tabActive: { backgroundColor: color.orangeDim },
-  tabText: { fontFamily: font.regular, fontSize: 11, color: color.textMuted },
-  tabActiveText: { fontFamily: font.semibold, fontSize: 11, color: color.orange400 },
 });

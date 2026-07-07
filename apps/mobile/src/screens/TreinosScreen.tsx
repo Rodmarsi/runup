@@ -1,0 +1,75 @@
+import { useEffect, useState } from "react";
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
+import { color } from "@runup/ui/tokens";
+import type { WorkoutDayDto } from "@runup/api-client";
+import { text } from "../theme.js";
+import { api } from "../api.js";
+import { useNav } from "../nav.js";
+import { DayRow } from "../components/DayRow.js";
+
+function isoToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function TreinosScreen() {
+  const { navigate } = useNav();
+  const [days, setDays] = useState<WorkoutDayDto[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api
+      .calendar()
+      .then(setDays)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator color={color.orange500} />
+      </View>
+    );
+  }
+
+  const today = isoToday();
+  const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
+  const upcoming = sorted.filter((d) => d.date.slice(0, 10) >= today);
+  const past = sorted.filter((d) => d.date.slice(0, 10) < today).reverse();
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
+      <Text style={text.screenTitle}>Treinos</Text>
+
+      {upcoming.length > 0 && (
+        <>
+          <Text style={[text.overline, styles.label]}>PRÓXIMOS</Text>
+          {upcoming.map((d) => (
+            <DayRow key={d.id} day={d} onPress={() => navigate({ name: "day", dayId: d.id })} />
+          ))}
+        </>
+      )}
+
+      {past.length > 0 && (
+        <>
+          <Text style={[text.overline, styles.label]}>REALIZADOS</Text>
+          {past.map((d) => (
+            <DayRow key={d.id} day={d} onPress={() => navigate({ name: "day", dayId: d.id })} />
+          ))}
+        </>
+      )}
+
+      {days.length === 0 && (
+        <Text style={[text.secondary, styles.label]}>
+          Nenhum treino atribuído ainda.
+        </Text>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: color.surface0 },
+  center: { justifyContent: "center", alignItems: "center" },
+  scroll: { padding: 16 },
+  label: { marginTop: 14, marginBottom: 8 },
+});

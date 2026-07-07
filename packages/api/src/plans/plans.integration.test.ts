@@ -311,6 +311,25 @@ describe("metas e overview", () => {
     expect(overview.estimate.byWeek[0]).toMatchObject({ week: 1 });
   });
 
+  it("lista as metas do próprio aluno", async () => {
+    const { coach, student } = await linkedPair("g4");
+    await createPlan(coach.token, student.id);
+    await app.inject({
+      method: "POST",
+      url: "/goals",
+      headers: auth(student.token),
+      payload: { studentId: student.id, targetRace: "10k", raceDate: "2026-09-01" },
+    });
+    const res = await app.inject({
+      method: "GET",
+      url: "/me/goals",
+      headers: auth(student.token),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toHaveLength(1);
+    expect(res.json()[0].targetRace).toBe("10k");
+  });
+
   it("aluno não cria meta para outro aluno (403)", async () => {
     const { student } = await linkedPair("g2");
     const other = await register("student", "outro-g2@runup.app");

@@ -82,6 +82,48 @@ export interface LogWorkoutInput {
   notes?: string;
 }
 
+export interface GoalDto {
+  id: string;
+  targetRace: RaceDistance;
+  raceName: string | null;
+  raceDate: string;
+  targetTimeSeconds: number | null;
+  status: string;
+}
+
+export interface PersonalRecordDto {
+  id: string;
+  distance: RaceDistance;
+  timeSeconds: number;
+  achievedAt: string;
+}
+
+export interface ConversationDto {
+  linkId: string;
+  with: { id: string; name: string };
+  lastMessage: { text: string; sentAt: string } | null;
+  unread: number;
+}
+
+export interface MessageDto {
+  id: string;
+  senderId: string;
+  text: string;
+  sentAt: string;
+}
+
+export interface StravaStatus {
+  connected: boolean;
+  athleteId: string | null;
+}
+
+export interface StravaSyncResult {
+  imported: number;
+  matched: number;
+  standalone: number;
+  prsUpdated: number;
+}
+
 /** Erro padronizado da API: { code, message, details }. */
 export class ApiError extends Error {
   constructor(
