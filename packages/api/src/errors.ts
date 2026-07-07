@@ -52,4 +52,6 @@ export const errors = {
     new AppError(404, "DAY_NOT_FOUND", "Treino não encontrado"),
   goalNotFound: () =>
     new AppError(404, "GOAL_NOT_FOUND", "Meta não encontrada"),
+  stravaNotConnected: () =>
+    new AppError(400, "STRAVA_NOT_CONNECTED", "Conecte sua conta do Strava primeiro"),
 } as const;

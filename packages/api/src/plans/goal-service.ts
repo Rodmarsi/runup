@@ -169,11 +169,13 @@ export class GoalService {
         })
       : [];
 
-    const loggedEfforts = logs.map((l) => ({
-      week: l.workoutDay.week,
-      distanceMeters: l.distanceMeters!,
-      timeSeconds: l.durationSeconds!,
-    }));
+    const loggedEfforts = logs
+      .filter((l) => l.workoutDay !== null)
+      .map((l) => ({
+        week: l.workoutDay!.week,
+        distanceMeters: l.distanceMeters!,
+        timeSeconds: l.durationSeconds!,
+      }));
 
     const allSamples: EffortSample[] = [
       ...baseline,

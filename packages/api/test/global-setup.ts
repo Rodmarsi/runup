@@ -6,8 +6,11 @@ const TEST_DATABASE_URL =
 
 /** Sincroniza o schema no banco de teste antes de rodar a suíte. */
 export default function setup() {
-  execSync("pnpm --filter @runup/db exec prisma db push --skip-generate", {
-    stdio: "inherit",
-    env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
-  });
+  execSync(
+    "pnpm --filter @runup/db exec prisma db push --skip-generate --accept-data-loss",
+    {
+      stdio: "inherit",
+      env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+    },
+  );
 }

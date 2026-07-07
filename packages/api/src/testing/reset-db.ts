@@ -11,6 +11,7 @@ export async function resetDb() {
   await prisma.message.deleteMany();
   await prisma.bodyMetric.deleteMany();
   await prisma.personalRecord.deleteMany();
+  await prisma.stravaConnection.deleteMany();
   await prisma.subscription.deleteMany();
   await prisma.coachStudent.deleteMany();
   await prisma.refreshToken.deleteMany();

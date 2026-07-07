@@ -183,11 +183,14 @@ model WorkoutTemplate {
 
 model WorkoutLog {
   id                String           @id @default(uuid())
-  workoutDay        WorkoutDay       @relation(fields: [workoutDayId], references: [id])
-  workoutDayId      String
+  // Opcional: atividades avulsas do Strava (sem dia planejado) têm dia nulo.
+  workoutDay        WorkoutDay?      @relation(fields: [workoutDayId], references: [id])
+  workoutDayId      String?
   student           User             @relation(fields: [studentId], references: [id])
   studentId         String
   source            WorkoutLogSource @default(manual)
+  // Id da atividade no Strava — evita importar a mesma atividade duas vezes.
+  stravaActivityId  String?          @unique
   completedAt       DateTime         @default(now())
   distanceMeters    Int?
   durationSeconds   Int?

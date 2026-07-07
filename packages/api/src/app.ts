@@ -13,6 +13,8 @@ import { profileRoutes } from "./profile/routes.js";
 import { messagingRoutes } from "./messaging/routes.js";
 import { excelImportRoutes } from "./excel-import/routes.js";
 import type { SpreadsheetInterpreter } from "./excel-import/interpreter.js";
+import { stravaRoutes } from "./strava/routes.js";
+import type { StravaClient } from "./strava/client.js";
 
 /** Formato padrão de erro da API: { code, message, details }. */
 export interface ApiError {
@@ -26,6 +28,8 @@ export interface BuildAppOptions {
   logger?: boolean;
   /** Interpretador de planilhas (mock nos testes; produção usa Claude). */
   interpreter?: SpreadsheetInterpreter;
+  /** Cliente Strava (mock nos testes; produção usa a API do Strava). */
+  stravaClient?: StravaClient;
 }
 
 export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
@@ -42,6 +46,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   app.register(profileRoutes(db));
   app.register(messagingRoutes(db));
   app.register(excelImportRoutes(db, options.interpreter));
+  app.register(stravaRoutes(db, options.stravaClient));
 
   app.setErrorHandler(
     (error: FastifyError, _request: FastifyRequest, reply: FastifyReply) => {
