@@ -1,0 +1,76 @@
+import type { FastifyInstance } from "fastify";
+import type { PrismaClient } from "@runup/db";
+import { errors } from "../errors.js";
+import { requireAuth, requireRole } from "../auth/middleware.js";
+import { PlanService } from "./service.js";
+import { GoalService } from "./goal-service.js";
+import {
+  createPlanSchema,
+  logWorkoutSchema,
+  commentSchema,
+  createGoalSchema,
+} from "./schemas.js";
+
+export function planRoutes(db: PrismaClient) {
+  const plans = new PlanService(db);
+  const goals = new GoalService(db);
+  const asCoach = { preHandler: requireRole("coach") };
+  const asStudent = { preHandler: requireRole("student") };
+  const authed = { preHandler: requireAuth };
+
+  return async function (app: FastifyInstance) {
+    // Treinador cria e atribui um plano a um aluno vinculado.
+    app.post("/plans", asCoach, async (request, reply) => {
+      const parsed = createPlanSchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      const plan = await plans.createPlan(request.authUser!.id, parsed.data);
+      reply.status(201).send(plan);
+    });
+
+    // Calendário do aluno (seus dias de treino).
+    app.get("/me/calendar", asStudent, async (request) => {
+      return plans.calendarForStudent(request.authUser!.id);
+    });
+
+    // Detalhe de um dia (aluno dono ou treinador vinculado).
+    app.get("/workout-days/:id", authed, async (request) => {
+      const { id } = request.params as { id: string };
+      const { id: userId, role } = request.authUser!;
+      return plans.getDay(userId, role, id);
+    });
+
+    // Aluno registra a execução (check-in com feedback).
+    app.post("/workout-days/:id/log", asStudent, async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const parsed = logWorkoutSchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      const log = await plans.logWorkout(request.authUser!.id, id, parsed.data);
+      reply.status(201).send(log);
+    });
+
+    // Comentário num dia (treinador ou aluno do vínculo).
+    app.post("/workout-days/:id/comments", authed, async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const parsed = commentSchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      const { id: userId, role } = request.authUser!;
+      const comment = await plans.addComment(userId, role, id, parsed.data.text);
+      reply.status(201).send(comment);
+    });
+
+    // Metas.
+    app.post("/goals", authed, async (request, reply) => {
+      const parsed = createGoalSchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      const { id: userId, role } = request.authUser!;
+      const goal = await goals.createGoal(userId, role, parsed.data);
+      reply.status(201).send(goal);
+    });
+
+    app.get("/goals/:id/overview", authed, async (request) => {
+      const { id } = request.params as { id: string };
+      const { id: userId, role } = request.authUser!;
+      return goals.overview(userId, role, id);
+    });
+  };
+}

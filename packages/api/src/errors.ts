@@ -40,4 +40,16 @@ export const errors = {
       "COACH_LIMIT_REACHED",
       "Limite de alunos do plano atingido — faça upgrade para ativar mais alunos",
     ),
+  notLinked: () =>
+    new AppError(
+      403,
+      "NOT_LINKED",
+      "Você não tem um vínculo ativo com este aluno",
+    ),
+  planNotFound: () =>
+    new AppError(404, "PLAN_NOT_FOUND", "Plano não encontrado"),
+  dayNotFound: () =>
+    new AppError(404, "DAY_NOT_FOUND", "Treino não encontrado"),
+  goalNotFound: () =>
+    new AppError(404, "GOAL_NOT_FOUND", "Meta não encontrada"),
 } as const;
