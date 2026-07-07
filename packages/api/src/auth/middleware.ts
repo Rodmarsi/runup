@@ -31,3 +31,13 @@ export async function requireAuth(request: FastifyRequest): Promise<void> {
     throw errors.unauthorized();
   }
 }
+
+/** preHandler que exige autenticação E um papel específico. */
+export function requireRole(role: UserRole) {
+  return async function (request: FastifyRequest): Promise<void> {
+    await requireAuth(request);
+    if (request.authUser!.role !== role) {
+      throw errors.forbidden();
+    }
+  };
+}

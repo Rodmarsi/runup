@@ -1,17 +1,13 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { prisma } from "@runup/db";
 import { buildApp } from "../app.js";
+import { resetDb } from "../testing/reset-db.js";
 
 const app = buildApp({ logger: false });
 
-async function cleanDb() {
-  await prisma.refreshToken.deleteMany();
-  await prisma.user.deleteMany();
-}
-
-beforeEach(cleanDb);
+beforeEach(resetDb);
 afterAll(async () => {
-  await cleanDb();
+  await resetDb();
   await app.close();
   await prisma.$disconnect();
 });

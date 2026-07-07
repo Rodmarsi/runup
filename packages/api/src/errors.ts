@@ -24,6 +24,20 @@ export const errors = {
     ),
   unauthorized: () =>
     new AppError(401, "UNAUTHORIZED", "Autenticação necessária"),
+  forbidden: () =>
+    new AppError(403, "FORBIDDEN", "Você não tem permissão para esta ação"),
   validation: (details: unknown) =>
     new AppError(422, "VALIDATION_ERROR", "Dados inválidos", details),
+  studentNotFound: () =>
+    new AppError(404, "STUDENT_NOT_FOUND", "Nenhum aluno com este email"),
+  alreadyLinked: () =>
+    new AppError(409, "ALREADY_LINKED", "Já existe um vínculo com este aluno"),
+  inviteNotFound: () =>
+    new AppError(404, "INVITE_NOT_FOUND", "Convite não encontrado"),
+  coachLimitReached: () =>
+    new AppError(
+      402,
+      "COACH_LIMIT_REACHED",
+      "Limite de alunos do plano atingido — faça upgrade para ativar mais alunos",
+    ),
 } as const;

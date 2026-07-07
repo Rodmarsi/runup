@@ -7,6 +7,7 @@ import Fastify, {
 import { prisma, type PrismaClient } from "@runup/db";
 import { AppError } from "./errors.js";
 import { authRoutes } from "./auth/routes.js";
+import { coachingRoutes } from "./coaching/routes.js";
 
 /** Formato padrão de erro da API: { code, message, details }. */
 export interface ApiError {
@@ -29,6 +30,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   });
 
   app.register(authRoutes(db));
+  app.register(coachingRoutes(db));
 
   app.setErrorHandler(
     (error: FastifyError, _request: FastifyRequest, reply: FastifyReply) => {
