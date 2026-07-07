@@ -11,6 +11,8 @@ import { coachingRoutes } from "./coaching/routes.js";
 import { planRoutes } from "./plans/routes.js";
 import { profileRoutes } from "./profile/routes.js";
 import { messagingRoutes } from "./messaging/routes.js";
+import { excelImportRoutes } from "./excel-import/routes.js";
+import type { SpreadsheetInterpreter } from "./excel-import/interpreter.js";
 
 /** Formato padrão de erro da API: { code, message, details }. */
 export interface ApiError {
@@ -22,6 +24,8 @@ export interface ApiError {
 export interface BuildAppOptions {
   db?: PrismaClient;
   logger?: boolean;
+  /** Interpretador de planilhas (mock nos testes; produção usa Claude). */
+  interpreter?: SpreadsheetInterpreter;
 }
 
 export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
@@ -37,6 +41,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   app.register(planRoutes(db));
   app.register(profileRoutes(db));
   app.register(messagingRoutes(db));
+  app.register(excelImportRoutes(db, options.interpreter));
 
   app.setErrorHandler(
     (error: FastifyError, _request: FastifyRequest, reply: FastifyReply) => {
