@@ -15,6 +15,12 @@ enum UserRole {
   coach
 }
 
+enum AuthProvider {
+  email
+  google
+  strava
+}
+
 enum CoachStudentStatus {
   pending
   active
@@ -57,12 +63,15 @@ enum GoalStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  role      UserRole
-  name      String
-  email     String   @unique
-  avatarUrl String?
-  createdAt DateTime @default(now())
+  id           String       @id @default(uuid())
+  role         UserRole
+  name         String
+  email        String       @unique
+  avatarUrl    String?
+  authProvider AuthProvider @default(email)
+  // Nulo para contas criadas via OAuth (Google/Strava).
+  passwordHash String?
+  createdAt    DateTime     @default(now())
 
   coachLinks     CoachStudent[]    @relation("CoachLinks")
   studentLinks   CoachStudent[]    @relation("StudentLinks")
@@ -75,6 +84,21 @@ model User {
   sentMessages   Message[]
   templates      WorkoutTemplate[]
   stravaLink     StravaConnection?
+  refreshTokens  RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  // Guarda apenas o hash do token — o valor bruto vive só no cliente.
+  tokenHash String    @unique
+  expiresAt DateTime
+  // Rotação: quando usado, marca-se revogado e emite-se um novo.
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model CoachStudent {

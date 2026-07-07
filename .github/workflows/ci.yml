@@ -8,6 +8,25 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: runup
+          POSTGRES_PASSWORD: runup
+          POSTGRES_DB: runup_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U runup"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      TEST_DATABASE_URL: postgresql://runup:runup@localhost:5432/runup_test?schema=public
+
     steps:
       - uses: actions/checkout@v4
 
