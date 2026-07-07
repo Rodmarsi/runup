@@ -17,6 +17,7 @@ import {
   type SubscriptionView,
   type AdherenceAlert,
   type CreatePlanInput,
+  type ImportPreview,
   type LogWorkoutInput,
 } from "./types.js";
 
@@ -131,6 +132,21 @@ export class RunUpClient {
 
   createPlan(input: CreatePlanInput): Promise<{ id: string }> {
     return this.request<{ id: string }>("POST", "/plans", input);
+  }
+
+  importExcel(studentId: string, contentBase64: string): Promise<ImportPreview> {
+    return this.request<ImportPreview>("POST", "/coach/import/excel", {
+      studentId,
+      contentBase64,
+    });
+  }
+
+  confirmImport(input: CreatePlanInput): Promise<{ id: string }> {
+    return this.request<{ id: string }>(
+      "POST",
+      "/coach/import/excel/confirm",
+      input,
+    );
   }
 
   private async request<T = unknown>(

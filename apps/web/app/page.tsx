@@ -73,8 +73,8 @@ export default function DashboardPage() {
         </div>
         <NavItem label="Painel" active />
         <NavItem label="Alunos" badge={active.length} />
-        <NavItem label="Treinos" />
-        <NavItem label="Importar" />
+        <NavItem label="Treinos" onClick={() => router.push("/builder")} />
+        <NavItem label="Importar" onClick={() => router.push("/import")} />
         <NavItem label="Chat" />
         <div style={{ flex: 1 }} />
         {sub && (
@@ -173,13 +173,22 @@ function NavItem({
   label,
   active,
   badge,
+  onClick,
 }: {
   label: string;
   active?: boolean;
   badge?: number;
+  onClick?: () => void;
 }) {
   return (
-    <div style={{ ...styles.nav, ...(active ? styles.navActive : {}) }}>
+    <div
+      onClick={onClick}
+      style={{
+        ...styles.nav,
+        ...(active ? styles.navActive : {}),
+        cursor: onClick ? "pointer" : "default",
+      }}
+    >
       <span style={{ color: active ? "#fff" : color.textSecondary }}>{label}</span>
       {badge !== undefined && badge > 0 && (
         <span style={styles.navBadge}>{badge}</span>

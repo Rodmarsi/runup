@@ -153,6 +153,27 @@ export interface CreatePlanInput {
   days: { week: number; date: string; blocks: Block[] }[];
 }
 
+export interface InterpretedDay {
+  week: number;
+  date?: string;
+  dayLabel?: string;
+  blocks: Block[];
+  sourceRef?: string;
+  confidence: "high" | "low";
+  note?: string;
+}
+
+export interface InterpretedPlan {
+  title: string;
+  durationWeeks: number;
+  days: InterpretedDay[];
+}
+
+export interface ImportPreview {
+  plan: InterpretedPlan;
+  summary: { weeks: number; days: number; lowConfidence: number };
+}
+
 /** Erro padronizado da API: { code, message, details }. */
 export class ApiError extends Error {
   constructor(
