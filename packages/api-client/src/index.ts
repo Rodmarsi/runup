@@ -13,6 +13,9 @@ import {
   type MessageDto,
   type StravaStatus,
   type StravaSyncResult,
+  type CoachStudentDto,
+  type SubscriptionView,
+  type AdherenceAlert,
   type LogWorkoutInput,
 } from "./types.js";
 
@@ -108,18 +111,37 @@ export class RunUpClient {
     return this.request<StravaSyncResult>("POST", "/me/strava/sync");
   }
 
+  // --- Treinador ---
+  coachStudents(): Promise<CoachStudentDto[]> {
+    return this.request<CoachStudentDto[]>("GET", "/coach/students");
+  }
+
+  subscription(): Promise<SubscriptionView> {
+    return this.request<SubscriptionView>("GET", "/coach/subscription");
+  }
+
+  alerts(): Promise<AdherenceAlert[]> {
+    return this.request<AdherenceAlert[]>("GET", "/coach/alerts");
+  }
+
+  inviteStudent(studentEmail: string) {
+    return this.request("POST", "/coach/students/invite", { studentEmail });
+  }
+
   private async request<T = unknown>(
     method: string,
     path: string,
     body?: unknown,
   ): Promise<T> {
     const token = await this.options.tokens.get();
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    // Só declara JSON quando há corpo — evita o 400 de "empty JSON body".
+    if (body !== undefined) headers["Content-Type"] = "application/json";
+
     const res = await fetch(`${this.options.baseUrl}${path}`, {
       method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
     });
 

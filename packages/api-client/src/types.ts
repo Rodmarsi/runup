@@ -124,6 +124,27 @@ export interface StravaSyncResult {
   prsUpdated: number;
 }
 
+// --- Treinador ---
+export interface CoachStudentDto {
+  id: string;
+  status: "pending" | "active" | "ended";
+  createdAt: string;
+  student: { id: string; name: string; email: string };
+}
+
+export interface SubscriptionView {
+  tier: "free" | "pro" | "elite";
+  maxStudents: number;
+  activeStudents: number;
+  canActivateMore: boolean;
+}
+
+export interface AdherenceAlert {
+  studentId: string;
+  studentName: string;
+  consecutiveMissed: number;
+}
+
 /** Erro padronizado da API: { code, message, details }. */
 export class ApiError extends Error {
   constructor(

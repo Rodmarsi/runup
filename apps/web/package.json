@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@runup/api-client": "workspace:*",
+    "@runup/types": "workspace:*",
     "@runup/ui": "workspace:*",
     "next": "^15.1.3",
     "react": "^19.0.0",

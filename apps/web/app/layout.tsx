@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
+import { Poppins } from "next/font/google";
 import { color } from "@runup/ui/tokens";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
+});
 
 export const metadata: Metadata = {
   title: "RunUp — Treinador",
@@ -10,13 +17,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={poppins.variable}>
       <body
         style={{
           margin: 0,
           background: color.surface0,
           color: color.textPrimary,
-          fontFamily: "Poppins, system-ui, sans-serif",
+          fontFamily: "var(--font-poppins), system-ui, sans-serif",
         }}
       >
         {children}

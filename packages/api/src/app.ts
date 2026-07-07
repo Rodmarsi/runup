@@ -4,6 +4,7 @@ import Fastify, {
   type FastifyReply,
   type FastifyRequest,
 } from "fastify";
+import cors from "@fastify/cors";
 import { prisma, type PrismaClient } from "@runup/db";
 import { AppError } from "./errors.js";
 import { authRoutes } from "./auth/routes.js";
@@ -35,6 +36,9 @@ export interface BuildAppOptions {
 export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   const db = options.db ?? prisma;
   const app = Fastify({ logger: options.logger ?? true });
+
+  // Libera o dashboard web (dev) a chamar a API de outra origem.
+  app.register(cors, { origin: true });
 
   app.get("/health", async () => {
     return { status: "ok", service: "runup-api", time: new Date().toISOString() };
