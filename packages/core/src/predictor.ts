@@ -1,3 +1,5 @@
+import type { RaceDistance } from "@runup/types";
+
 /**
  * Preditor de tempo de prova — fase 1 (fórmula de Riegel).
  *
@@ -7,6 +9,22 @@
  * É uma estimativa estatística, não garantia.
  */
 const RIEGEL_EXPONENT = 1.06;
+
+/** Distância oficial de cada prova, em metros. */
+export const RACE_DISTANCE_METERS: Record<
+  Exclude<RaceDistance, "other">,
+  number
+> = {
+  "5k": 5_000,
+  "10k": 10_000,
+  "21k": 21_097,
+  "42k": 42_195,
+};
+
+/** Metros de uma prova; `null` para distâncias abertas ("other"). */
+export function raceDistanceMeters(distance: RaceDistance): number | null {
+  return distance === "other" ? null : RACE_DISTANCE_METERS[distance];
+}
 
 export interface EffortSample {
   distanceMeters: number;

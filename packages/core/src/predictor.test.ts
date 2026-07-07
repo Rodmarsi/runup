@@ -1,6 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { predictRaceTime, bestPredictedRaceTime } from "./predictor.js";
+import {
+  predictRaceTime,
+  bestPredictedRaceTime,
+  raceDistanceMeters,
+} from "./predictor.js";
 import { formatDuration } from "./format.js";
+
+describe("raceDistanceMeters", () => {
+  it("mapeia as distâncias oficiais", () => {
+    expect(raceDistanceMeters("5k")).toBe(5_000);
+    expect(raceDistanceMeters("21k")).toBe(21_097);
+    expect(raceDistanceMeters("42k")).toBe(42_195);
+  });
+
+  it("retorna null para prova aberta", () => {
+    expect(raceDistanceMeters("other")).toBeNull();
+  });
+});
 
 describe("predictRaceTime (Riegel)", () => {
   it("projeta a maratona a partir de um 10k de 47:12", () => {

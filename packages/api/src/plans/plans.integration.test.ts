@@ -262,6 +262,55 @@ describe("metas e overview", () => {
     expect(body.weeks[0]).toMatchObject({ week: 1, totalDays: 2 });
   });
 
+  it("overview traz estimativa de tempo a partir de treino logado", async () => {
+    const { coach, student } = await linkedPair("g3");
+    const plan = (await createPlan(coach.token, student.id)).json();
+
+    // Loga um esforço com distância + tempo (10 km em 47:12).
+    const dayId = (
+      await app.inject({
+        method: "GET",
+        url: "/me/calendar",
+        headers: auth(student.token),
+      })
+    ).json()[0].id;
+    await app.inject({
+      method: "POST",
+      url: `/workout-days/${dayId}/log`,
+      headers: auth(student.token),
+      payload: { status: "done", distanceMeters: 10000, durationSeconds: 2832 },
+    });
+
+    const goal = (
+      await app.inject({
+        method: "POST",
+        url: "/goals",
+        headers: auth(student.token),
+        payload: {
+          studentId: student.id,
+          planId: plan.id,
+          targetRace: "21k",
+          raceDate: "2026-08-11",
+        },
+      })
+    ).json();
+
+    const overview = (
+      await app.inject({
+        method: "GET",
+        url: `/goals/${goal.id}/overview`,
+        headers: auth(student.token),
+      })
+    ).json();
+
+    expect(overview.estimate.targetDistanceMeters).toBe(21097);
+    expect(typeof overview.estimate.currentSeconds).toBe("number");
+    // 10k em 47:12 → meia ~ 1h44 (entre 90min e 120min).
+    expect(overview.estimate.currentSeconds).toBeGreaterThan(5400);
+    expect(overview.estimate.currentSeconds).toBeLessThan(7200);
+    expect(overview.estimate.byWeek[0]).toMatchObject({ week: 1 });
+  });
+
   it("aluno não cria meta para outro aluno (403)", async () => {
     const { student } = await linkedPair("g2");
     const other = await register("student", "outro-g2@runup.app");
