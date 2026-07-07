@@ -1,10 +1,22 @@
 import "dotenv/config";
 import { buildApp } from "./app.js";
 import { MockInterpreter } from "./excel-import/mock-interpreter.js";
+import { GeminiInterpreter } from "./excel-import/gemini-interpreter.js";
+import type { SpreadsheetInterpreter } from "./excel-import/interpreter.js";
 
-// RUNUP_MOCK_AI=1 usa o interpretador de exemplo (demo sem ANTHROPIC_API_KEY).
-const interpreter = process.env.RUNUP_MOCK_AI ? new MockInterpreter() : undefined;
-const app = buildApp({ interpreter });
+/**
+ * Provedor de IA do import de Excel, por prioridade:
+ * RUNUP_MOCK_AI=1 → exemplo fixo · ANTHROPIC_API_KEY → Claude (padrão das
+ * rotas) · GEMINI_API_KEY → Gemini (camada gratuita).
+ */
+function resolveInterpreter(): SpreadsheetInterpreter | undefined {
+  if (process.env.RUNUP_MOCK_AI) return new MockInterpreter();
+  if (process.env.ANTHROPIC_API_KEY) return undefined; // rotas criam o ClaudeInterpreter
+  if (process.env.GEMINI_API_KEY) return new GeminiInterpreter();
+  return undefined;
+}
+
+const app = buildApp({ interpreter: resolveInterpreter() });
 const port = Number(process.env.PORT ?? 3333);
 
 app
