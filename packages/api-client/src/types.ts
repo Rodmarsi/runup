@@ -145,6 +145,14 @@ export interface AdherenceAlert {
   consecutiveMissed: number;
 }
 
+export interface CreatePlanInput {
+  studentId: string;
+  title: string;
+  durationWeeks: number;
+  startDate: string;
+  days: { week: number; date: string; blocks: Block[] }[];
+}
+
 /** Erro padronizado da API: { code, message, details }. */
 export class ApiError extends Error {
   constructor(

@@ -16,6 +16,7 @@ import {
   type CoachStudentDto,
   type SubscriptionView,
   type AdherenceAlert,
+  type CreatePlanInput,
   type LogWorkoutInput,
 } from "./types.js";
 
@@ -126,6 +127,10 @@ export class RunUpClient {
 
   inviteStudent(studentEmail: string) {
     return this.request("POST", "/coach/students/invite", { studentEmail });
+  }
+
+  createPlan(input: CreatePlanInput): Promise<{ id: string }> {
+    return this.request<{ id: string }>("POST", "/plans", input);
   }
 
   private async request<T = unknown>(

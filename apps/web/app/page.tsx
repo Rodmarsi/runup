@@ -100,9 +100,14 @@ export default function DashboardPage() {
               {active.length} aluno(s) · {alerts.length} alerta(s)
             </div>
           </div>
-          <button onClick={invite} style={styles.newBtn}>
-            + Novo aluno
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={invite} style={styles.newBtnGhost}>
+              + Novo aluno
+            </button>
+            <button onClick={() => router.push("/builder")} style={styles.newBtn}>
+              + Novo treino
+            </button>
+          </div>
         </header>
 
         {/* Resumo */}
@@ -284,6 +289,16 @@ const styles: Record<string, React.CSSProperties> = {
     background: color.orange500,
     color: color.ink,
     fontWeight: 600,
+    fontSize: 12,
+    padding: "8px 16px",
+    cursor: "pointer",
+  },
+  newBtnGhost: {
+    border: `1px solid ${border.strong}`,
+    borderRadius: 99,
+    background: "transparent",
+    color: color.textSecondary,
+    fontWeight: 500,
     fontSize: 12,
     padding: "8px 16px",
     cursor: "pointer",
