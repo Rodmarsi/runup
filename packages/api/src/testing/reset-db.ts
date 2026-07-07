@@ -8,6 +8,9 @@ export async function resetDb() {
   await prisma.planAssignment.deleteMany();
   await prisma.goal.deleteMany();
   await prisma.plan.deleteMany();
+  await prisma.message.deleteMany();
+  await prisma.bodyMetric.deleteMany();
+  await prisma.personalRecord.deleteMany();
   await prisma.subscription.deleteMany();
   await prisma.coachStudent.deleteMany();
   await prisma.refreshToken.deleteMany();

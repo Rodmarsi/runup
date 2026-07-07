@@ -4,11 +4,13 @@ import { errors } from "../errors.js";
 import { requireRole } from "../auth/middleware.js";
 import { CoachingService } from "./service.js";
 import { SubscriptionService } from "./subscription-service.js";
+import { AdherenceService } from "./adherence-service.js";
 import { inviteSchema, upgradeSchema } from "./schemas.js";
 
 export function coachingRoutes(db: PrismaClient) {
   const coaching = new CoachingService(db);
   const subscriptions = new SubscriptionService(db);
+  const adherence = new AdherenceService(db);
   const asCoach = { preHandler: requireRole("coach") };
   const asStudent = { preHandler: requireRole("student") };
 
@@ -30,6 +32,10 @@ export function coachingRoutes(db: PrismaClient) {
 
     app.get("/coach/subscription", asCoach, async (request) => {
       return subscriptions.view(request.authUser!.id);
+    });
+
+    app.get("/coach/alerts", asCoach, async (request) => {
+      return adherence.coachAlerts(request.authUser!.id);
     });
 
     app.post("/coach/subscription/upgrade", asCoach, async (request) => {
