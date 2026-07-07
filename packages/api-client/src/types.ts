@@ -34,6 +34,17 @@ export interface WorkoutDayDto {
   blocks: Block[];
 }
 
+export interface WorkoutCommentDto {
+  id: string;
+  authorId: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface WorkoutDayDetailDto extends WorkoutDayDto {
+  comments: WorkoutCommentDto[];
+}
+
 export interface Stats {
   totalDistanceMeters: number;
   totalTimeSeconds: number;

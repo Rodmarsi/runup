@@ -9,8 +9,23 @@ import {
 } from "@expo-google-fonts/poppins";
 import { color } from "@runup/ui/tokens";
 import { AuthProvider, useAuth } from "./src/auth.js";
+import { NavProvider, useNav } from "./src/nav.js";
 import { LoginScreen } from "./src/screens/LoginScreen.js";
 import { HomeScreen } from "./src/screens/HomeScreen.js";
+import { DayDetailScreen } from "./src/screens/DayDetailScreen.js";
+import { CheckinScreen } from "./src/screens/CheckinScreen.js";
+
+function Router() {
+  const { route } = useNav();
+  switch (route.name) {
+    case "day":
+      return <DayDetailScreen dayId={route.dayId} />;
+    case "checkin":
+      return <CheckinScreen dayId={route.dayId} />;
+    default:
+      return <HomeScreen />;
+  }
+}
 
 function Gate() {
   const { user, loading } = useAuth();
@@ -21,7 +36,12 @@ function Gate() {
       </View>
     );
   }
-  return user ? <HomeScreen /> : <LoginScreen />;
+  if (!user) return <LoginScreen />;
+  return (
+    <NavProvider>
+      <Router />
+    </NavProvider>
+  );
 }
 
 export default function App() {

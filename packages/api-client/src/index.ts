@@ -4,6 +4,7 @@ import {
   type RegisterInput,
   type AuthUser,
   type WorkoutDayDto,
+  type WorkoutDayDetailDto,
   type Stats,
   type GoalOverview,
   type LogWorkoutInput,
@@ -55,8 +56,8 @@ export class RunUpClient {
     return this.request<WorkoutDayDto[]>("GET", "/me/calendar");
   }
 
-  workoutDay(id: string): Promise<WorkoutDayDto> {
-    return this.request<WorkoutDayDto>("GET", `/workout-days/${id}`);
+  workoutDay(id: string): Promise<WorkoutDayDetailDto> {
+    return this.request<WorkoutDayDetailDto>("GET", `/workout-days/${id}`);
   }
 
   logWorkout(dayId: string, input: LogWorkoutInput) {

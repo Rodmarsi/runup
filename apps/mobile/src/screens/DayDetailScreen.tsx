@@ -1,0 +1,158 @@
+import { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { color, border } from "@runup/ui/tokens";
+import type { Block, BlockItem } from "@runup/types";
+import type { WorkoutDayDetailDto } from "@runup/api-client";
+import { text, font, gradients } from "../theme.js";
+import { api } from "../api.js";
+import { useNav } from "../nav.js";
+import { km, pace } from "../format.js";
+
+const ROLE_LABEL: Record<Block["role"], string> = {
+  warmup: "AQUECIMENTO",
+  main: "PRINCIPAL",
+  cooldown: "DESAQUECIMENTO",
+};
+const ROLE_ORDER: Block["role"][] = ["warmup", "main", "cooldown"];
+
+function describeItem(item: BlockItem): string {
+  if (item.kind === "running") {
+    if (item.interval) {
+      const rec = item.interval.recoverySeconds
+        ? ` · rec ${item.interval.recoverySeconds}s`
+        : "";
+      const p = item.targetPaceSecPerKm ? ` @ ${pace(item.targetPaceSecPerKm)}/km` : "";
+      return `${item.interval.reps}× ${item.interval.repDistanceMeters ?? ""}m${p}${rec}`;
+    }
+    const dist = item.distanceMeters ? `${km(item.distanceMeters)} km` : "";
+    const p = item.targetPaceSecPerKm ? ` @ ${pace(item.targetPaceSecPerKm)}/km` : "";
+    return `${dist}${p}`.trim() || "Corrida";
+  }
+  if (item.kind === "free") return item.notes;
+  return `${item.sets ?? ""}×${item.reps ?? ""}`.replace(/^×$/, "Exercício");
+}
+
+export function DayDetailScreen({ dayId }: { dayId: string }) {
+  const { goHome, navigate } = useNav();
+  const [day, setDay] = useState<WorkoutDayDetailDto | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api
+      .workoutDay(dayId)
+      .then(setDay)
+      .finally(() => setLoading(false));
+  }, [dayId]);
+
+  if (loading || !day) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator color={color.orange500} />
+      </View>
+    );
+  }
+
+  const blocks = [...day.blocks].sort(
+    (a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role),
+  );
+
+  return (
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <Pressable onPress={goHome} style={styles.back}>
+          <Text style={styles.backText}>‹ Voltar</Text>
+        </Pressable>
+
+        <Text style={text.screenTitle}>Treino do dia</Text>
+        <Text style={[text.muted, styles.date]}>{day.date.slice(0, 10)}</Text>
+
+        {blocks.map((block, bi) => (
+          <View key={bi} style={styles.blockGroup}>
+            <Text style={[text.overline, styles.blockLabel]}>
+              {ROLE_LABEL[block.role]}
+            </Text>
+            <View
+              style={[
+                styles.card,
+                block.role === "main" && styles.mainCard,
+              ]}
+            >
+              {block.items.map((item, ii) => (
+                <Text key={ii} style={styles.item}>
+                  {describeItem(item)}
+                </Text>
+              ))}
+            </View>
+          </View>
+        ))}
+
+        {day.comments.length > 0 && (
+          <View style={styles.blockGroup}>
+            <Text style={[text.overline, styles.blockLabel]}>
+              COMENTÁRIOS DO TREINADOR
+            </Text>
+            {day.comments.map((c) => (
+              <View key={c.id} style={styles.comment}>
+                <Text style={text.body}>{c.text}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <Pressable
+          onPress={() => navigate({ name: "checkin", dayId })}
+          style={styles.cta}
+        >
+          <LinearGradient
+            colors={gradients.brasa}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.ctaGradient}
+          >
+            <Text style={styles.ctaText}>Concluir treino</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: color.surface0 },
+  center: { justifyContent: "center", alignItems: "center" },
+  scroll: { padding: 16, paddingBottom: 24 },
+  back: { marginBottom: 8 },
+  backText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
+  date: { marginTop: 2, marginBottom: 16 },
+  blockGroup: { marginBottom: 14 },
+  blockLabel: { marginBottom: 6 },
+  card: {
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 14,
+  },
+  mainCard: { borderColor: "rgba(255,85,0,0.35)" },
+  item: { fontFamily: font.regular, fontSize: 13, color: color.textPrimary, marginVertical: 2 },
+  comment: {
+    backgroundColor: color.surface3,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  footer: { padding: 16 },
+  cta: { borderRadius: 99, overflow: "hidden" },
+  ctaGradient: { paddingVertical: 14, alignItems: "center" },
+  ctaText: { fontFamily: font.semibold, fontSize: 15, color: "#fff" },
+});

@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Pressable,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { color, border } from "@runup/ui/tokens";
 import type { WorkoutDayDto, Stats } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { useAuth } from "../auth.js";
+import { useNav } from "../nav.js";
 import { api } from "../api.js";
 import { km, pace } from "../format.js";
 
@@ -36,6 +44,7 @@ function summarize(day: WorkoutDayDto): { title: string; sub: string } {
 
 export function HomeScreen() {
   const { user } = useAuth();
+  const { navigate } = useNav();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,16 +113,18 @@ export function HomeScreen() {
 
         {/* Treino de hoje (farol) */}
         {todayDay ? (
-          <LinearGradient
-            colors={gradients.brasaRadiante}
-            start={{ x: 0.18, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.hero}
-          >
-            <Text style={styles.heroOverline}>HOJE</Text>
-            <Text style={styles.heroTitle}>{summarize(todayDay).title}</Text>
-            <Text style={styles.heroSub}>{summarize(todayDay).sub}</Text>
-          </LinearGradient>
+          <Pressable onPress={() => navigate({ name: "day", dayId: todayDay.id })}>
+            <LinearGradient
+              colors={gradients.brasaRadiante}
+              start={{ x: 0.18, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.hero}
+            >
+              <Text style={styles.heroOverline}>HOJE</Text>
+              <Text style={styles.heroTitle}>{summarize(todayDay).title}</Text>
+              <Text style={styles.heroSub}>{summarize(todayDay).sub}</Text>
+            </LinearGradient>
+          </Pressable>
         ) : (
           <View style={[styles.card, styles.restCard]}>
             <Text style={text.secondary}>Sem treino hoje — dia de descanso.</Text>
