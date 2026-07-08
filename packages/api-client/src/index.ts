@@ -113,6 +113,10 @@ export class RunUpClient {
     return this.request<StravaSyncResult>("POST", "/me/strava/sync");
   }
 
+  stravaAuthorizeUrl(): Promise<{ url: string }> {
+    return this.request<{ url: string }>("GET", "/me/strava/authorize");
+  }
+
   // --- Treinador ---
   coachStudents(): Promise<CoachStudentDto[]> {
     return this.request<CoachStudentDto[]>("GET", "/coach/students");

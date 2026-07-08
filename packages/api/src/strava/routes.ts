@@ -25,6 +25,29 @@ export function stravaRoutes(db: PrismaClient, client?: StravaClient) {
       return { connected: Boolean(conn), athleteId: conn?.athleteId ?? null };
     });
 
+    // Aluno pede a URL de autorização (abre no navegador do dispositivo).
+    app.get("/me/strava/authorize", asStudent, async (request) => {
+      return { url: service().buildAuthorizeUrl(request.authUser!.id) };
+    });
+
+    // Strava redireciona aqui após o aluno aprovar. Público (sem token).
+    app.get("/strava/callback", async (request, reply) => {
+      const { code, state, error } = request.query as {
+        code?: string;
+        state?: string;
+        error?: string;
+      };
+      if (error || !code || !state) {
+        return reply.type("text/html").send(callbackPage(false));
+      }
+      try {
+        await service().completeOAuth(code, state);
+        return reply.type("text/html").send(callbackPage(true));
+      } catch {
+        return reply.type("text/html").send(callbackPage(false));
+      }
+    });
+
     app.post("/me/strava/connect", asStudent, async (request, reply) => {
       const parsed = connectSchema.safeParse(request.body);
       if (!parsed.success) throw errors.validation(parsed.error.flatten());
@@ -41,4 +64,21 @@ export function stravaRoutes(db: PrismaClient, client?: StravaClient) {
       reply.status(204).send();
     });
   };
+}
+
+/** Página HTML mostrada ao aluno após o callback do Strava. */
+function callbackPage(ok: boolean): string {
+  const title = ok ? "Strava conectado ✓" : "Não foi possível conectar";
+  const msg = ok
+    ? "Pode voltar ao app RunUp e tocar em “Sincronizar”."
+    : "Tente novamente pelo app RunUp.";
+  const accent = ok ? "#FF5500" : "#F87171";
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RunUp · Strava</title></head>
+<body style="margin:0;background:#121110;color:#fff;font-family:system-ui,sans-serif;
+display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center">
+<div><div style="font-size:22px;font-weight:700;color:${accent}">${title}</div>
+<div style="margin-top:8px;color:#A5A6A6;font-size:14px">${msg}</div></div>
+</body></html>`;
 }

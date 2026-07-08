@@ -5,6 +5,8 @@ import {
   generateRefreshToken,
   hashRefreshToken,
   refreshTokenExpiry,
+  signStravaState,
+  verifyStravaState,
 } from "./tokens.js";
 
 describe("access token", () => {
@@ -37,5 +39,17 @@ describe("refresh token", () => {
     const now = new Date("2026-07-06T00:00:00Z");
     const exp = refreshTokenExpiry(now);
     expect(exp.toISOString()).toBe("2026-08-05T00:00:00.000Z");
+  });
+});
+
+describe("strava state (OAuth)", () => {
+  it("assina e verifica preservando o studentId", () => {
+    const state = signStravaState("student-1");
+    expect(verifyStravaState(state)).toBe("student-1");
+  });
+
+  it("rejeita um access token comum como state", () => {
+    const notAState = signAccessToken({ sub: "student-1", role: "student" });
+    expect(() => verifyStravaState(notAState)).toThrow();
   });
 });

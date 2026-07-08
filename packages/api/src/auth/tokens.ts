@@ -46,3 +46,24 @@ export function refreshTokenExpiry(now: Date = new Date()): Date {
   expires.setDate(expires.getDate() + config.refreshTokenTtlDays);
   return expires;
 }
+
+/** Assina o `state` do OAuth do Strava (carrega o aluno, curta duração). */
+export function signStravaState(studentId: string): string {
+  return jwt.sign({ sub: studentId, purpose: "strava" }, config.jwtSecret, {
+    expiresIn: "10m",
+  });
+}
+
+/** Verifica o `state` do callback do Strava e retorna o studentId. */
+export function verifyStravaState(token: string): string {
+  const decoded = jwt.verify(token, config.jwtSecret);
+  if (
+    typeof decoded !== "object" ||
+    decoded === null ||
+    decoded.purpose !== "strava" ||
+    typeof decoded.sub !== "string"
+  ) {
+    throw new Error("State inválido");
+  }
+  return decoded.sub;
+}

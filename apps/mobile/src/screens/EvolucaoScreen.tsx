@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import { color, border } from "@runup/ui/tokens";
 import type {
@@ -67,6 +68,11 @@ export function EvolucaoScreen() {
     } finally {
       setSyncing(false);
     }
+  }
+
+  async function connectStrava() {
+    const { url } = await api.stravaAuthorizeUrl();
+    await Linking.openURL(url);
   }
 
   if (loading) {
@@ -161,9 +167,13 @@ export function EvolucaoScreen() {
         <Text style={[text.body, { flex: 1 }]}>
           {strava?.connected ? "Conectado" : "Não conectado"}
         </Text>
-        {strava?.connected && (
+        {strava?.connected ? (
           <Pressable onPress={sync} disabled={syncing} style={styles.syncBtn}>
             <Text style={styles.syncText}>{syncing ? "..." : "Sincronizar"}</Text>
+          </Pressable>
+        ) : (
+          <Pressable onPress={connectStrava} style={styles.syncBtn}>
+            <Text style={styles.syncText}>Conectar</Text>
           </Pressable>
         )}
       </View>

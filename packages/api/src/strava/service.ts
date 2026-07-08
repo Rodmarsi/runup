@@ -2,6 +2,8 @@ import type { PrismaClient } from "@runup/db";
 import type { RaceDistance } from "@runup/types";
 import { RACE_DISTANCE_METERS } from "@runup/core";
 import { errors } from "../errors.js";
+import { config } from "../config.js";
+import { signStravaState, verifyStravaState } from "../auth/tokens.js";
 import type { StravaClient, StravaActivity, StravaTokens } from "./client.js";
 
 export interface SyncResult {
@@ -19,6 +21,26 @@ export class StravaService {
     private readonly db: PrismaClient,
     private readonly client: StravaClient,
   ) {}
+
+  /** URL de autorização do Strava com `state` assinado (identifica o aluno). */
+  buildAuthorizeUrl(studentId: string): string {
+    const clientId = process.env.STRAVA_CLIENT_ID ?? "";
+    const params = new URLSearchParams({
+      client_id: clientId,
+      response_type: "code",
+      redirect_uri: config.stravaRedirectUri,
+      approval_prompt: "auto",
+      scope: config.stravaScope,
+      state: signStravaState(studentId),
+    });
+    return `https://www.strava.com/oauth/authorize?${params.toString()}`;
+  }
+
+  /** Callback: valida o `state`, troca o código e guarda a conexão. */
+  async completeOAuth(code: string, state: string): Promise<void> {
+    const studentId = verifyStravaState(state);
+    await this.connect(studentId, code);
+  }
 
   /** Conecta a conta do aluno via código OAuth do Strava. */
   async connect(studentId: string, code: string) {
