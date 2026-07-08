@@ -27,6 +27,11 @@ export default function LoginPage() {
     }
   }
 
+  async function loginGoogle() {
+    const { url } = await api.googleAuthorizeUrl("coach");
+    window.location.href = url;
+  }
+
   return (
     <main style={styles.wrap}>
       <form onSubmit={onSubmit} style={styles.card}>
@@ -54,6 +59,12 @@ export default function LoginPage() {
 
         <button type="submit" disabled={busy} style={styles.cta}>
           {busy ? "Entrando…" : "Entrar"}
+        </button>
+
+        <div style={styles.divider}>ou</div>
+
+        <button type="button" onClick={loginGoogle} style={styles.google}>
+          Entrar com Google
         </button>
       </form>
     </main>
@@ -100,5 +111,21 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#fff",
     cursor: "pointer",
     background: `linear-gradient(135deg, ${gradient.brasa[0]}, ${gradient.brasa[1]}, ${gradient.brasa[2]})`,
+  },
+  divider: {
+    textAlign: "center",
+    color: color.textMuted,
+    fontSize: 12,
+    margin: "4px 0",
+  },
+  google: {
+    border: `1px solid ${border.strong}`,
+    borderRadius: 99,
+    padding: "11px 0",
+    fontSize: 14,
+    fontWeight: 500,
+    color: color.textPrimary,
+    background: "transparent",
+    cursor: "pointer",
   },
 };

@@ -10,4 +10,9 @@ export const config = {
     process.env.STRAVA_REDIRECT_URI ?? "http://localhost:3333/strava/callback",
   /** Escopo pedido ao Strava (ler atividades). */
   stravaScope: "activity:read_all",
+  /** OAuth do Google (login). */
+  googleRedirectUri:
+    process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:3333/auth/google/callback",
+  /** Para onde o callback devolve o usuário (web) com os tokens. */
+  webUrl: process.env.WEB_URL ?? "http://localhost:3000",
 } as const;

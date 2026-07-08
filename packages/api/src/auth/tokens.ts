@@ -67,3 +67,24 @@ export function verifyStravaState(token: string): string {
   }
   return decoded.sub;
 }
+
+/** Assina o `state` do OAuth do Google, carregando o papel escolhido. */
+export function signGoogleState(role: UserRole): string {
+  return jwt.sign({ role, purpose: "google" }, config.jwtSecret, {
+    expiresIn: "10m",
+  });
+}
+
+/** Verifica o `state` do callback do Google e retorna o papel. */
+export function verifyGoogleState(token: string): UserRole {
+  const decoded = jwt.verify(token, config.jwtSecret);
+  if (
+    typeof decoded !== "object" ||
+    decoded === null ||
+    decoded.purpose !== "google" ||
+    (decoded.role !== "student" && decoded.role !== "coach")
+  ) {
+    throw new Error("State inválido");
+  }
+  return decoded.role;
+}

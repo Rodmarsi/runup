@@ -58,6 +58,18 @@ export class RunUpClient {
     await this.options.tokens.set(null);
   }
 
+  /** Grava um access token obtido por fora (ex.: callback OAuth do Google). */
+  setAccessToken(token: string): void | Promise<void> {
+    return this.options.tokens.set(token);
+  }
+
+  googleAuthorizeUrl(role: "student" | "coach"): Promise<{ url: string }> {
+    return this.request<{ url: string }>(
+      "GET",
+      `/auth/google/authorize?role=${role}`,
+    );
+  }
+
   me(): Promise<AuthUser> {
     return this.request<AuthUser>("GET", "/auth/me");
   }
