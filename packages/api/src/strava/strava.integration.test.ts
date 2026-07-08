@@ -238,6 +238,17 @@ describe("conexão e sync do Strava", () => {
       headers: auth(s.token),
     });
     expect(prs.json()[0]).toMatchObject({ distance: "10k", timeSeconds: 2700 });
+
+    // Atividade avulsa deve contar nas estatísticas (não só treinos planejados).
+    const stats = await app.inject({
+      method: "GET",
+      url: "/me/stats",
+      headers: auth(s.token),
+    });
+    expect(stats.json()).toMatchObject({
+      workoutCount: 1,
+      totalDistanceMeters: 10050,
+    });
     await app.close();
   });
 

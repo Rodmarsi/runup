@@ -55,9 +55,13 @@ export class ProfileService {
 
   /** Estatísticas agregadas do aluno para o dashboard. */
   async stats(studentId: string, now: Date = new Date()): Promise<Stats> {
+    // Conta treinos planejados concluídos + atividades avulsas (ex.: Strava).
     const where = {
       studentId,
-      workoutDay: { status: { in: [...COMPLETED] } },
+      OR: [
+        { workoutDay: { status: { in: [...COMPLETED] } } },
+        { workoutDayId: null },
+      ],
     };
 
     const [totals, week, month, logDates] = await Promise.all([
