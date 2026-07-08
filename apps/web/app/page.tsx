@@ -72,10 +72,14 @@ export default function DashboardPage() {
           Run<span style={{ color: color.orange500 }}>Up</span>
         </div>
         <NavItem label="Painel" active />
-        <NavItem label="Alunos" badge={active.length} />
+        <NavItem
+          label="Alunos"
+          badge={active.length}
+          onClick={() => router.push("/students")}
+        />
         <NavItem label="Treinos" onClick={() => router.push("/builder")} />
         <NavItem label="Importar" onClick={() => router.push("/import")} />
-        <NavItem label="Chat" />
+        <NavItem label="Chat" onClick={() => router.push("/students")} />
         <div style={{ flex: 1 }} />
         {sub && (
           <div style={styles.subCard}>
@@ -130,7 +134,11 @@ export default function DashboardPage() {
             <div style={styles.section}>PRECISAM DE ATENÇÃO</div>
             <div style={styles.attentionRow}>
               {alerts.map((a) => (
-                <div key={a.studentId} style={styles.attentionCard}>
+                <div
+                  key={a.studentId}
+                  onClick={() => router.push(`/students/${a.studentId}`)}
+                  style={{ ...styles.attentionCard, cursor: "pointer" }}
+                >
                   <div style={styles.avatar}>{initials(a.studentName)}</div>
                   <div style={{ flex: 1 }}>
                     <div style={styles.attnName}>{a.studentName}</div>
@@ -138,7 +146,7 @@ export default function DashboardPage() {
                       {a.consecutiveMissed} treinos pulados seguidos
                     </div>
                   </div>
-                  <span style={styles.attnAction}>Mensagem</span>
+                  <span style={styles.attnAction}>Ver aluno</span>
                 </div>
               ))}
             </div>
@@ -154,7 +162,11 @@ export default function DashboardPage() {
             </div>
           )}
           {students.map((s) => (
-            <div key={s.id} style={styles.studentRow}>
+            <div
+              key={s.id}
+              onClick={() => router.push(`/students/${s.student.id}`)}
+              style={{ ...styles.studentRow, cursor: "pointer" }}
+            >
               <div style={styles.avatar}>{initials(s.student.name)}</div>
               <div style={{ flex: 1 }}>
                 <div style={styles.studentName}>{s.student.name}</div>

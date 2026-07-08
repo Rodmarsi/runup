@@ -145,6 +145,13 @@ export interface AdherenceAlert {
   consecutiveMissed: number;
 }
 
+export interface CoachStudentOverview {
+  student: { id: string; name: string; email: string; avatarUrl: string | null };
+  stats: Stats;
+  goals: GoalDto[];
+  days: WorkoutDayDto[];
+}
+
 export interface CreatePlanInput {
   studentId: string;
   title: string;

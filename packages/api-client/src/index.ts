@@ -16,6 +16,7 @@ import {
   type CoachStudentDto,
   type SubscriptionView,
   type AdherenceAlert,
+  type CoachStudentOverview,
   type CreatePlanInput,
   type ImportPreview,
   type LogWorkoutInput,
@@ -144,6 +145,13 @@ export class RunUpClient {
 
   inviteStudent(studentEmail: string) {
     return this.request("POST", "/coach/students/invite", { studentEmail });
+  }
+
+  coachStudentOverview(studentId: string): Promise<CoachStudentOverview> {
+    return this.request<CoachStudentOverview>(
+      "GET",
+      `/coach/students/${studentId}/overview`,
+    );
   }
 
   createPlan(input: CreatePlanInput): Promise<{ id: string }> {

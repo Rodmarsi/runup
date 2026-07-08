@@ -121,6 +121,64 @@ describe("autorização por papel", () => {
   });
 });
 
+describe("visão do aluno pelo treinador", () => {
+  async function linkPair(suffix: string) {
+    const coach = await registerUser("coach", `coach-${suffix}@runup.app`);
+    const reg = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "Aluno",
+        email: `aluno-${suffix}@runup.app`,
+        password: "segredo123",
+        role: "student",
+      },
+    });
+    const student = reg.json();
+    await invite(coach, `aluno-${suffix}@runup.app`);
+    const id = await firstInviteId(student.accessToken);
+    await app.inject({
+      method: "POST",
+      url: `/student/invites/${id}/accept`,
+      headers: auth(student.accessToken),
+    });
+    return { coach, studentId: student.user.id as string };
+  }
+
+  it("treinador vê o overview do aluno vinculado", async () => {
+    const { coach, studentId } = await linkPair("ov1");
+    const res = await app.inject({
+      method: "GET",
+      url: `/coach/students/${studentId}/overview`,
+      headers: auth(coach),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().student.id).toBe(studentId);
+    expect(res.json()).toHaveProperty("stats");
+    expect(res.json()).toHaveProperty("goals");
+  });
+
+  it("não vê aluno sem vínculo (403)", async () => {
+    const coach = await registerUser("coach", "coach-ov2@runup.app");
+    const other = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: {
+        name: "Outro",
+        email: "outro-ov2@runup.app",
+        password: "segredo123",
+        role: "student",
+      },
+    });
+    const res = await app.inject({
+      method: "GET",
+      url: `/coach/students/${other.json().user.id}/overview`,
+      headers: auth(coach),
+    });
+    expect(res.statusCode).toBe(403);
+  });
+});
+
 describe("faixa de assinatura (enforcement no aceite)", () => {
   it("free bloqueia o 3º aluno; upgrade para pro libera", async () => {
     const coach = await registerUser("coach", "coachlim@runup.app");
