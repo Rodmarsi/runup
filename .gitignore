@@ -4,6 +4,9 @@ node_modules/
 
 # builds
 dist/
+!packages/api/dist/
+packages/api/dist/*
+!packages/api/dist/server.mjs
 .next/
 .turbo/
 *.tsbuildinfo

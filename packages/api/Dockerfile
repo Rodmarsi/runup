@@ -1,29 +1,30 @@
-# Imagem da API RunUp. Contexto de build = raiz do monorepo.
+# Imagem da API RunUp.
+#
+# Não usamos `pnpm install` do monorepo aqui: mesmo filtrado, o pnpm precisa
+# validar o lockfile inteiro do workspace (1000+ entradas) e isso sozinho já
+# passa de 512MB de RAM — inviável em planos free (ex.: Render). Em vez disso,
+# o bundle (esbuild) e o manifesto de dependências de runtime são gerados
+# ANTES do build, localmente, via `pnpm --filter @runup/api run predeploy`
+# (veja packages/api/scripts/prepare-deploy.mjs). A imagem só faz um `npm
+# install` pequeno e independente do workspace.
 FROM node:22-slim
 
 # openssl é exigido pelo Prisma em runtime.
 RUN apt-get update && apt-get install -y --no-install-recommends openssl \
   && rm -rf /var/lib/apt/lists/*
-RUN corepack enable
 
 WORKDIR /app
 
-# Copia o monorepo (o .dockerignore exclui node_modules/.next/etc.).
-COPY . .
+COPY packages/api/deploy/package.json ./package.json
+RUN npm install --omit=dev --no-audit --no-fund
 
-# Instala só a API e suas dependências de workspace (core, db, types).
-RUN pnpm install --frozen-lockfile --filter "@runup/api..."
+COPY packages/db/prisma ./prisma
+RUN npx prisma generate
 
-# Gera o Prisma Client.
-RUN pnpm --filter @runup/db exec prisma generate
-
-# Empacota a API (e os pacotes do workspace) num único arquivo JS já compilado.
-# Evita rodar via tsx (compilação em runtime), que consome memória extra —
-# importante nos planos free de hospedagem (ex.: Render, limite de 512MB).
-RUN pnpm --filter @runup/api run bundle
+COPY packages/api/dist/server.mjs ./server.mjs
 
 ENV NODE_ENV=production
 EXPOSE 3333
 
 # Aplica as migrations e sobe o servidor já compilado.
-CMD ["sh", "-c", "pnpm --filter @runup/db exec prisma migrate deploy && node packages/api/dist/server.mjs"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node server.mjs"]

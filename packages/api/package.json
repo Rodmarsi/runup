@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "bundle": "esbuild src/server.ts --bundle --platform=node --format=esm --minify --outfile=dist/server.mjs --external:@prisma/client --external:fastify --external:@fastify/cors --external:bcryptjs --external:jsonwebtoken --external:xlsx --external:zod --external:dotenv --external:@anthropic-ai/sdk"
+    "bundle": "esbuild src/server.ts --bundle --platform=node --format=esm --minify --outfile=dist/server.mjs --external:@prisma/client --external:fastify --external:@fastify/cors --external:bcryptjs --external:jsonwebtoken --external:xlsx --external:zod --external:dotenv --external:@anthropic-ai/sdk",
+    "predeploy": "pnpm run bundle && node scripts/prepare-deploy.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",

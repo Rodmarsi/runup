@@ -1,6 +1,8 @@
 **/node_modules
 **/.next
 **/dist
+!packages/api/dist
+!packages/api/dist/server.mjs
 **/.turbo
 **/.expo
 **/*.tsbuildinfo
