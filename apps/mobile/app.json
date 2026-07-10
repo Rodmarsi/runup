@@ -6,13 +6,21 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#121110",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.runup.app"
     },
     "android": {
       "package": "com.runup.app"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "78af50a9-7d2f-46e7-bf4b-ecf707e51d69"
+      }
+    },
+    "owner": "rodmarsi"
   }
 }
