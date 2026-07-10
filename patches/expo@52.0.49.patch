@@ -1,13 +1,68 @@
-diff --git a/android/build.gradle b/android/build.gradle
-index 190ac191dcbc6815f0900ea492a2b3cf1b60afa5..ed8df39e8a2376236a66b6ee0c657e374c87383b 100644
---- a/android/build.gradle
-+++ b/android/build.gradle
-@@ -43,7 +43,7 @@ buildscript {
- }
- 
- android {
--  namespace "expo.core"
-+  namespace "expo.modules"
-   defaultConfig {
-     versionCode 1
-     versionName "52.0.49"
+diff --git a/react-native.config.js b/react-native.config.js
+index 62eba2a93ddf0c53ae66985cbb7f7f9fa7219dcc..29cfe69418f6389ef8010e3d3efe44ae97960e96 100644
+--- a/react-native.config.js
++++ b/react-native.config.js
+@@ -1,48 +1,21 @@
+-const findProjectRootSync = require('expo-modules-autolinking/exports').findProjectRootSync;
+-const fs = require('fs');
+-const path = require('path');
+-
+-const projectRoot = findProjectRootSync();
+-
+-function isMatchedInFile(filePath, regexp) {
+-  const contents = fs.readFileSync(filePath, 'utf8');
+-  return !!contents.match(regexp);
+-}
+-
+-/**
+- * Checks if expo-modules-autolinking is setup on iOS
+- */
+-function isExpoModulesInstalledIos(projectRoot) {
+-  const podfilePath = path.join(projectRoot, 'ios', 'Podfile');
+-  if (!fs.existsSync(podfilePath)) {
+-    // Assumes true for managed apps
+-    return true;
+-  }
+-  return isMatchedInFile(podfilePath, /use_expo_modules!/);
+-}
+-
+-/**
+- * Checks if expo-modules-autolinking is setup on Android
+- */
+-function isExpoModulesInstalledAndroid(projectRoot) {
+-  const gradlePath = path.join(projectRoot, 'android', 'settings.gradle');
+-  if (!fs.existsSync(gradlePath)) {
+-    // Assumes true for managed apps
+-    return true;
+-  }
+-  return isMatchedInFile(gradlePath, /useExpoModules/);
+-}
+-
++// PATCH (patches/expo@52.0.49.patch): a versão original faz
++// `require('expo-modules-autolinking/exports')` para achar a raiz do
++// projeto. Quando o `expo-modules-autolinking` avalia este arquivo dentro do
++// seu sandbox de `require-from-string` (usado para resolver o
++// `react-native-config` do autolinking do React Native), esse require falha
++// e o erro é engolido silenciosamente (`catch { return null }`), fazendo o
++// autolinking cair no fallback (deriva o import a partir do `namespace` do
++// build.gradle + nome da classe), que gera o import inexistente
++// "expo.core.ExpoModulesPackage" e quebra o build nativo Android.
++// Como este projeto é sempre managed workflow com Expo Modules instalado,
++// simplificamos para os valores fixos corretos, sem depender desse require.
+ module.exports = {
+   dependency: {
+     platforms: {
+-      // To make Expo CLI works on bare react-native projects without installing Expo Modules, we disable autolinking in this case.
+-      ios: !isExpoModulesInstalledIos(projectRoot) ? null : {},
+-      android: !isExpoModulesInstalledAndroid(projectRoot)
+-        ? null
+-        : {
+-            packageImportPath: 'import expo.modules.ExpoModulesPackage;',
+-          },
++      ios: {},
++      android: {
++        packageImportPath: 'import expo.modules.ExpoModulesPackage;',
++      },
+       macos: null,
+       windows: null,
+     },
