@@ -21,6 +21,16 @@
         "projectId": "78af50a9-7d2f-46e7-bf4b-ecf707e51d69"
       }
     },
-    "owner": "rodmarsi"
+    "owner": "rodmarsi",
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ]
+    ]
   }
 }
