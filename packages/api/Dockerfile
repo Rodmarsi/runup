@@ -17,8 +17,13 @@ RUN pnpm install --frozen-lockfile --filter "@runup/api..."
 # Gera o Prisma Client.
 RUN pnpm --filter @runup/db exec prisma generate
 
+# Empacota a API (e os pacotes do workspace) num único arquivo JS já compilado.
+# Evita rodar via tsx (compilação em runtime), que consome memória extra —
+# importante nos planos free de hospedagem (ex.: Render, limite de 512MB).
+RUN pnpm --filter @runup/api run bundle
+
 ENV NODE_ENV=production
 EXPOSE 3333
 
-# Aplica as migrations e sobe o servidor (tsx roda o TS dos pacotes do workspace).
-CMD ["sh", "-c", "pnpm --filter @runup/db exec prisma migrate deploy && pnpm --filter @runup/api exec tsx src/server.ts"]
+# Aplica as migrations e sobe o servidor já compilado.
+CMD ["sh", "-c", "pnpm --filter @runup/db exec prisma migrate deploy && node packages/api/dist/server.mjs"]

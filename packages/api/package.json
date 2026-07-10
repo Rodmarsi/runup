@@ -10,11 +10,13 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bundle": "esbuild src/server.ts --bundle --platform=node --format=esm --minify --outfile=dist/server.mjs --external:@prisma/client --external:fastify --external:@fastify/cors --external:bcryptjs --external:jsonwebtoken --external:xlsx --external:zod --external:dotenv --external:@anthropic-ai/sdk"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
     "@fastify/cors": "^10.0.1",
+    "@prisma/client": "^6.1.0",
     "@runup/core": "workspace:*",
     "@runup/db": "workspace:*",
     "@runup/types": "workspace:*",
@@ -28,6 +30,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.7",
+    "esbuild": "^0.24.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
