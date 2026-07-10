@@ -1,0 +1,10 @@
+# HTTPS automático (Let's Encrypt) + proxy reverso para API e Web.
+# Os domínios vêm do ambiente (definidos no .env / docker-compose.prod.yml).
+
+{$API_DOMAIN} {
+	reverse_proxy api:3333
+}
+
+{$WEB_DOMAIN} {
+	reverse_proxy web:3000
+}

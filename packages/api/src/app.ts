@@ -40,8 +40,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   const db = options.db ?? prisma;
   const app = Fastify({ logger: options.logger ?? true });
 
-  // Libera o dashboard web (dev) a chamar a API de outra origem.
-  app.register(cors, { origin: true });
+  // CORS: em produção defina CORS_ORIGIN (lista separada por vírgula);
+  // sem ela, reflete qualquer origem (ok em dev — a auth é por Bearer token).
+  const corsEnv = process.env.CORS_ORIGIN;
+  app.register(cors, {
+    origin: corsEnv ? corsEnv.split(",").map((o) => o.trim()) : true,
+  });
 
   app.get("/health", async () => {
     return { status: "ok", service: "runup-api", time: new Date().toISOString() };
