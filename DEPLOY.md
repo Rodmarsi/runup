@@ -1,7 +1,62 @@
-# Deploy do RunUp (VPS + Docker + Caddy)
+# Deploy do RunUp
+
+## Opção atual (em produção): Render (free) + Neon (Postgres free) + GHCR
+
+Sem custo, sem VPS. Ao vivo em:
+- Web: https://runup-web.onrender.com
+- API: https://runup-api.onrender.com
+- Banco: Postgres no Neon
+
+**Por que via registry, e não build direto no Render:** tanto `pnpm install`
+do monorepo (mesmo filtrado — o pnpm precisa validar o lockfile do workspace
+inteiro, 1000+ entradas) quanto o `next build` sozinhos já passam de 512MB de
+RAM, o limite do build no plano free. Confirmado reproduzindo localmente com
+`docker build --memory=512m`. Por isso as imagens são **buildadas localmente
+(sem limite de memória) e publicadas prontas no GitHub Container Registry**;
+o Render só faz `docker pull` + roda, sem build nenhum do lado dele. Cada
+serviço no Render foi criado com "Deploy an existing image from a registry"
+(não "conectar repositório Git").
+
+Imagens: `ghcr.io/rodmarsi/runup-api:latest` e `ghcr.io/rodmarsi/runup-web:latest` (públicas).
+
+### Como atualizar depois de mudar código
+
+**API** (muda algo em `packages/api`, `packages/core`, `packages/db` ou `packages/types`):
+```bash
+pnpm --filter @runup/api run predeploy   # gera dist/server.mjs + deploy/package.json
+git add packages/api/dist packages/api/deploy
+git commit -m "chore(api): update deploy bundle"
+git push
+
+docker build -f packages/api/Dockerfile -t ghcr.io/rodmarsi/runup-api:latest .
+docker push ghcr.io/rodmarsi/runup-api:latest
+```
+
+**Web** (muda algo em `apps/web` ou nos pacotes que ela usa):
+```bash
+docker build --build-arg NEXT_PUBLIC_API_URL=https://runup-api.onrender.com \
+  -f apps/web/Dockerfile -t ghcr.io/rodmarsi/runup-web:latest .
+docker push ghcr.io/rodmarsi/runup-web:latest
+```
+
+Depois do push da imagem, no Render: abra o serviço → **Manual Deploy** →
+**Deploy latest image** (ele não redetecta sozinho uma imagem nova com a
+mesma tag `latest`).
+
+### Limitações do plano free (ok para validar com poucos usuários; migrar pra
+VPS quando tiver alunos pagantes de verdade)
+- Cada serviço "dorme" após 15min sem uso — primeiro acesso depois disso
+  demora ~30-50s (cold start).
+- Banco Neon: 100h de computação/mês, 0.5GB por branch.
+
+---
+
+## Alternativa: VPS + Docker Compose + Caddy
 
 Roda **Postgres + API + Web + Caddy** (HTTPS automático) numa VPS, via Docker Compose.
-O app mobile (Expo) é distribuído à parte (EAS Build → APK/lojas).
+Vale a pena migrar pra cá quando o app tiver alunos pagantes de verdade (sem
+cold start de ~1min do plano free do Render). O app mobile (Expo) é
+distribuído à parte (EAS Build → APK/lojas) em ambos os casos.
 
 ## Pré-requisitos
 
