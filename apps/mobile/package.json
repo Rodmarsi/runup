@@ -11,6 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@babel/runtime": "^7.29.7",
     "@expo-google-fonts/poppins": "^0.2.3",
     "@runup/api-client": "workspace:*",
     "@runup/types": "workspace:*",
