@@ -21,6 +21,8 @@ import {
   type ImportPreview,
   type LogWorkoutInput,
   type LogStandaloneWorkoutInput,
+  type WorkoutLogDto,
+  type ListWorkoutLogsQuery,
   type AthleteProfileDto,
   type AthleteProfileInput,
   type ShoeDto,
@@ -157,6 +159,14 @@ export class RunUpClient {
 
   logStandaloneWorkout(input: LogStandaloneWorkoutInput) {
     return this.request("POST", "/me/workout-logs", input);
+  }
+
+  workoutLogs(query: ListWorkoutLogsQuery = {}): Promise<WorkoutLogDto[]> {
+    const params = new URLSearchParams();
+    if (query.kind) params.set("kind", query.kind);
+    if (query.since) params.set("since", query.since);
+    const qs = params.toString();
+    return this.request<WorkoutLogDto[]>("GET", `/me/workout-logs${qs ? `?${qs}` : ""}`);
   }
 
   stats(): Promise<Stats> {

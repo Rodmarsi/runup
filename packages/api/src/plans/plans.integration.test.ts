@@ -235,6 +235,39 @@ describe("treino avulso (sem plano/vínculo)", () => {
   });
 });
 
+describe("histórico de atividades", () => {
+  it("lista e filtra por tipo", async () => {
+    const student = await register("student", "ativ1@runup.app");
+    await app.inject({
+      method: "POST",
+      url: "/me/workout-logs",
+      headers: auth(student.token),
+      payload: { kind: "running", distanceMeters: 8000 },
+    });
+    await app.inject({
+      method: "POST",
+      url: "/me/workout-logs",
+      headers: auth(student.token),
+      payload: { kind: "strength", durationSeconds: 2400 },
+    });
+
+    const all = await app.inject({
+      method: "GET",
+      url: "/me/workout-logs",
+      headers: auth(student.token),
+    });
+    expect(all.json()).toHaveLength(2);
+
+    const onlyRunning = await app.inject({
+      method: "GET",
+      url: "/me/workout-logs?kind=running",
+      headers: auth(student.token),
+    });
+    expect(onlyRunning.json()).toHaveLength(1);
+    expect(onlyRunning.json()[0]).toMatchObject({ kind: "running", distanceMeters: 8000 });
+  });
+});
+
 describe("comentários no treino", () => {
   it("treinador e aluno comentam no mesmo dia", async () => {
     const { coach, student } = await linkedPair("c1");

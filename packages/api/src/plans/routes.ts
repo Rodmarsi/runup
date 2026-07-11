@@ -8,6 +8,7 @@ import {
   createPlanSchema,
   logWorkoutSchema,
   logStandaloneWorkoutSchema,
+  listWorkoutLogsQuerySchema,
   commentSchema,
   createGoalSchema,
 } from "./schemas.js";
@@ -55,6 +56,13 @@ export function planRoutes(db: PrismaClient) {
       if (!parsed.success) throw errors.validation(parsed.error.flatten());
       const log = await plans.logStandaloneWorkout(request.authUser!.id, parsed.data);
       reply.status(201).send(log);
+    });
+
+    // Histórico de atividades do aluno (filtro opcional por tipo e por data).
+    app.get("/me/workout-logs", asStudent, async (request) => {
+      const parsed = listWorkoutLogsQuerySchema.safeParse(request.query);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      return plans.listWorkoutLogs(request.authUser!.id, parsed.data);
     });
 
     // Comentário num dia (treinador ou aluno do vínculo).

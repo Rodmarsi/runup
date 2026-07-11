@@ -25,6 +25,8 @@ import { ChatScreen } from "./src/screens/ChatScreen.js";
 import { BodyInfoScreen } from "./src/screens/BodyInfoScreen.js";
 import { EquipmentScreen } from "./src/screens/EquipmentScreen.js";
 import { SettingsScreen } from "./src/screens/SettingsScreen.js";
+import { ActivityDetailScreen } from "./src/screens/ActivityDetailScreen.js";
+import { AnalisesScreen } from "./src/screens/AnalisesScreen.js";
 
 function Router() {
   const { route } = useNav();
@@ -45,6 +47,10 @@ function Router() {
       return <EquipmentScreen />;
     case "settings":
       return <SettingsScreen />;
+    case "activity":
+      return <ActivityDetailScreen log={route.log} />;
+    case "analytics":
+      return <AnalisesScreen />;
     default:
       return <MainTabs />;
   }

@@ -293,6 +293,10 @@ export function ProfileScreen() {
       </View>
 
       <Text style={[text.overline, styles.label]}>MAIS</Text>
+      <Pressable onPress={() => navigate({ name: "analytics" })} style={styles.rowCard}>
+        <Text style={[styles.rowTitle, { flex: 1 }]}>Análises</Text>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
       <Pressable onPress={() => navigate({ name: "bodyInfo" })} style={styles.rowCard}>
         <Text style={[styles.rowTitle, { flex: 1 }]}>Informações</Text>
         <Text style={styles.chevron}>›</Text>

@@ -47,9 +47,13 @@ export interface SplitDto {
   paceSecPerKm: number;
 }
 
+export type WorkoutLogKind = "running" | "strength" | "mobility" | "bike" | "walk" | "other";
+
 export interface WorkoutLogDto {
   id: string;
+  workoutDayId: string | null;
   source: "manual" | "strava";
+  kind: WorkoutLogKind;
   completedAt: string;
   distanceMeters: number | null;
   durationSeconds: number | null;
@@ -110,11 +114,17 @@ export interface LogWorkoutInput {
 
 /** Treino avulso, sem estar ligado a um dia de um plano. */
 export interface LogStandaloneWorkoutInput {
+  kind?: WorkoutLogKind;
   distanceMeters?: number;
   durationSeconds?: number;
   perceivedEffort?: number;
   pain?: string;
   notes?: string;
+}
+
+export interface ListWorkoutLogsQuery {
+  kind?: WorkoutLogKind;
+  since?: string;
 }
 
 export type Sex = "male" | "female" | "other";

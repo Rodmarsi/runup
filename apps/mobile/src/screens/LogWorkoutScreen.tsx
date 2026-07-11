@@ -11,17 +11,27 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { color, border } from "@runup/ui/tokens";
-import { ApiError } from "@runup/api-client";
+import { ApiError, type WorkoutLogKind } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
 
 const PAINS = ["Nenhuma", "Joelho", "Panturrilha", "Canela", "Outro"];
 const RPE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const KIND_LABEL: Record<WorkoutLogKind, string> = {
+  running: "Corrida",
+  strength: "Musculação",
+  mobility: "Mobilidade",
+  bike: "Bike",
+  walk: "Caminhada",
+  other: "Outro",
+};
+const KINDS: WorkoutLogKind[] = ["running", "strength", "mobility", "bike", "walk", "other"];
 
 /** Registro de um treino avulso (sem plano do treinador por trás). */
 export function LogWorkoutScreen() {
   const { goHome } = useNav();
+  const [kind, setKind] = useState<WorkoutLogKind>("running");
   const [distanceKm, setDistanceKm] = useState("");
   const [durationMin, setDurationMin] = useState("");
   const [rpe, setRpe] = useState<number | null>(null);
@@ -41,6 +51,7 @@ export function LogWorkoutScreen() {
         ? Math.round(parseFloat(durationMin.replace(",", ".")) * 60)
         : undefined;
       await api.logStandaloneWorkout({
+        kind,
         distanceMeters: distance,
         durationSeconds: duration,
         perceivedEffort: rpe ?? undefined,
@@ -67,6 +78,24 @@ export function LogWorkoutScreen() {
         <Text style={[text.secondary, styles.subtitle]}>
           Treinou por conta própria, sem plano do treinador? Registre aqui.
         </Text>
+
+        <Text style={[text.overline, styles.label]}>TIPO DE TREINO</Text>
+        <View style={styles.chips}>
+          {KINDS.map((k) => {
+            const active = kind === k;
+            return (
+              <Pressable
+                key={k}
+                onPress={() => setKind(k)}
+                style={[styles.painChip, active && styles.painActive]}
+              >
+                <Text style={active ? styles.painActiveText : styles.painText}>
+                  {KIND_LABEL[k]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         <View style={styles.dataRow}>
           <View style={styles.dataCol}>

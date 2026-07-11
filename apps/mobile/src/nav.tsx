@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
+import type { WorkoutLogDto } from "@runup/api-client";
 
 export type Route =
   | { name: "home" }
@@ -9,7 +10,9 @@ export type Route =
   | { name: "chat"; linkId: string; withName: string }
   | { name: "bodyInfo" }
   | { name: "equipment" }
-  | { name: "settings" };
+  | { name: "settings" }
+  | { name: "activity"; log: WorkoutLogDto }
+  | { name: "analytics" };
 
 interface Nav {
   route: Route;

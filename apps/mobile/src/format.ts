@@ -60,6 +60,18 @@ export function paceUnitLabel(units: Units): string {
   return units === "mi" ? "/mi" : "/km";
 }
 
+/** Largura da barra do split (30%-100%): mais lento = barra mais cheia. */
+export function splitBarWidth(
+  paceSecPerKm: number,
+  splits: { paceSecPerKm: number }[],
+): number {
+  const paces = splits.map((s) => s.paceSecPerKm);
+  const min = Math.min(...paces);
+  const max = Math.max(...paces);
+  if (max === min) return 100;
+  return 30 + (70 * (paceSecPerKm - min)) / (max - min);
+}
+
 /** Duração em s como "1h52" ou "31:47". */
 export function duration(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);

@@ -1,6 +1,11 @@
 import type { PrismaClient } from "@runup/db";
 import { errors } from "../errors.js";
-import type { CreatePlanInput, LogWorkoutInput, LogStandaloneWorkoutInput } from "./schemas.js";
+import type {
+  CreatePlanInput,
+  LogWorkoutInput,
+  LogStandaloneWorkoutInput,
+  ListWorkoutLogsQuery,
+} from "./schemas.js";
 
 export class PlanService {
   constructor(private readonly db: PrismaClient) {}
@@ -126,12 +131,25 @@ export class PlanService {
       data: {
         studentId,
         source: "manual",
+        kind: input.kind,
         distanceMeters: input.distanceMeters,
         durationSeconds: input.durationSeconds,
         perceivedEffort: input.perceivedEffort,
         pain: input.pain,
         notes: input.notes,
       },
+    });
+  }
+
+  /** Histórico de atividades (Strava + registradas manualmente) do aluno. */
+  listWorkoutLogs(studentId: string, query: ListWorkoutLogsQuery) {
+    return this.db.workoutLog.findMany({
+      where: {
+        studentId,
+        kind: query.kind,
+        completedAt: query.since ? { gte: new Date(query.since) } : undefined,
+      },
+      orderBy: { completedAt: "desc" },
     });
   }
 

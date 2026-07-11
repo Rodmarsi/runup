@@ -39,13 +39,21 @@ export const logWorkoutSchema = z.object({
   notes: z.string().max(2000).optional(),
 });
 
+const workoutLogKind = z.enum(["running", "strength", "mobility", "bike", "walk", "other"]);
+
 /** Treino avulso, registrado pelo aluno sem estar ligado a um dia de um plano. */
 export const logStandaloneWorkoutSchema = z.object({
+  kind: workoutLogKind.default("running"),
   distanceMeters: z.number().int().positive().optional(),
   durationSeconds: z.number().int().positive().optional(),
   perceivedEffort: z.number().int().min(1).max(10).optional(),
   pain: z.string().max(500).optional(),
   notes: z.string().max(2000).optional(),
+});
+
+export const listWorkoutLogsQuerySchema = z.object({
+  kind: workoutLogKind.optional(),
+  since: isoDate.optional(),
 });
 
 export const commentSchema = z.object({
@@ -64,5 +72,6 @@ export const createGoalSchema = z.object({
 export type CreatePlanInput = z.infer<typeof createPlanSchema>;
 export type LogWorkoutInput = z.infer<typeof logWorkoutSchema>;
 export type LogStandaloneWorkoutInput = z.infer<typeof logStandaloneWorkoutSchema>;
+export type ListWorkoutLogsQuery = z.infer<typeof listWorkoutLogsQuerySchema>;
 export type CommentInput = z.infer<typeof commentSchema>;
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;
