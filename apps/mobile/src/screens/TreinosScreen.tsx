@@ -56,7 +56,7 @@ export function TreinosScreen() {
         <>
           <Text style={[text.overline, styles.label]}>PRÓXIMOS</Text>
           {upcoming.map((d) => (
-            <DayRow key={d.id} day={d} onPress={() => navigate({ name: "day", dayId: d.id })} />
+            <DayRow key={d.id} day={d} onPress={() => navigate({ name: "day", date: d.date.slice(0, 10) })} />
           ))}
         </>
       )}
@@ -65,7 +65,7 @@ export function TreinosScreen() {
         <>
           <Text style={[text.overline, styles.label]}>REALIZADOS</Text>
           {past.map((d) => (
-            <DayRow key={d.id} day={d} onPress={() => navigate({ name: "day", dayId: d.id })} />
+            <DayRow key={d.id} day={d} onPress={() => navigate({ name: "day", date: d.date.slice(0, 10) })} />
           ))}
         </>
       )}

@@ -134,8 +134,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
             return (
               <Pressable
                 key={iso}
-                onPress={() => d && navigate({ name: "day", dayId: d.id })}
-                disabled={!d}
+                onPress={() => navigate({ name: "day", date: iso })}
                 style={[styles.dayCell, isToday && styles.dayCellToday]}
               >
                 <Text style={[styles.dayDow, isToday && styles.dayTextToday]}>{dow}</Text>
@@ -150,7 +149,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
 
         {/* Treino de hoje (farol) */}
         {todayDay ? (
-          <Pressable onPress={() => navigate({ name: "day", dayId: todayDay.id })}>
+          <Pressable onPress={() => navigate({ name: "day", date: today })}>
             <LinearGradient
               colors={gradients.brasaRadiante}
               start={{ x: 0.18, y: 0 }}
@@ -228,6 +227,7 @@ function currentWeek(weekOffset = 0): string[] {
 function dotStyle(status?: WorkoutDayDto["status"]) {
   if (status === "done" || status === "partial") return { backgroundColor: color.success };
   if (status === "skipped") return { backgroundColor: color.danger };
+  if (status) return { backgroundColor: color.orange500 }; // "pending" — treino agendado
   return { backgroundColor: "transparent" };
 }
 
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   dayDow: { fontFamily: font.regular, fontSize: 9, color: color.textFaint },
   dayNum: { fontFamily: font.regular, fontSize: 12, color: color.textSecondary, marginVertical: 1 },
   dayTextToday: { color: color.ink, fontFamily: font.semibold },
-  dot: { width: 4, height: 4, borderRadius: 99 },
+  dot: { width: 6, height: 6, borderRadius: 99, marginTop: 2 },
   hero: { borderRadius: 14, padding: 16, marginBottom: 12 },
   heroOverline: {
     fontFamily: font.semibold,

@@ -106,8 +106,7 @@ export function AgendaScreen() {
           return (
             <Pressable
               key={i}
-              onPress={() => d && navigate({ name: "day", dayId: d.id })}
-              disabled={!d}
+              onPress={() => navigate({ name: "day", date: iso })}
               style={[styles.cell, isToday && styles.cellToday]}
             >
               <Text style={[styles.cellText, isToday && styles.cellTextToday]}>
@@ -121,7 +120,11 @@ export function AgendaScreen() {
 
       <Text style={[text.overline, styles.label]}>TREINOS DO MÊS</Text>
       {monthDays.map((d) => (
-        <DayRow key={d.id} day={d} onPress={() => navigate({ name: "day", dayId: d.id })} />
+        <DayRow
+          key={d.id}
+          day={d}
+          onPress={() => navigate({ name: "day", date: d.date.slice(0, 10) })}
+        />
       ))}
       {monthDays.length === 0 && (
         <Text style={[text.secondary, styles.label]}>Nenhum treino neste mês.</Text>
@@ -175,6 +178,6 @@ const styles = StyleSheet.create({
   },
   cellText: { fontFamily: font.regular, fontSize: 13, color: color.textSecondary },
   cellTextToday: { fontFamily: font.semibold, color: color.orange400 },
-  cellDot: { width: 4, height: 4, borderRadius: 99 },
+  cellDot: { width: 6, height: 6, borderRadius: 99 },
   label: { marginTop: 18, marginBottom: 8 },
 });

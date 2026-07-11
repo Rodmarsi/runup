@@ -26,7 +26,7 @@ function Router() {
   const { route } = useNav();
   switch (route.name) {
     case "day":
-      return <DayDetailScreen dayId={route.dayId} />;
+      return <DayDetailScreen date={route.date} />;
     case "checkin":
       return <CheckinScreen dayId={route.dayId} />;
     case "logWorkout":

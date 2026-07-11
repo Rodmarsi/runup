@@ -2,7 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 export type Route =
   | { name: "home" }
-  | { name: "day"; dayId: string }
+  | { name: "day"; date: string }
   | { name: "checkin"; dayId: string }
   | { name: "logWorkout" }
   | { name: "goal"; goalId: string }
