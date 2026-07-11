@@ -6,6 +6,7 @@ import { text } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { DayRow } from "../components/DayRow.js";
+import { LoadError } from "../components/LoadError.js";
 
 function isoToday() {
   return new Date().toISOString().slice(0, 10);
@@ -15,18 +16,32 @@ export function TreinosScreen() {
   const { navigate } = useNav();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
+    setError(false);
     api
       .calendar()
       .then(setDays)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(load, []);
 
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator color={color.orange500} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.scroll]}>
+        <LoadError onRetry={load} />
       </View>
     );
   }

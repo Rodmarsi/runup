@@ -15,6 +15,7 @@ import { text, font, gradients } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { km, pace } from "../format.js";
+import { LoadError } from "../components/LoadError.js";
 
 const ROLE_LABEL: Record<Block["role"], string> = {
   warmup: "AQUECIMENTO",
@@ -44,18 +45,35 @@ export function DayDetailScreen({ dayId }: { dayId: string }) {
   const { goHome, navigate } = useNav();
   const [day, setDay] = useState<WorkoutDayDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
+    setError(false);
     api
       .workoutDay(dayId)
       .then(setDay)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, [dayId]);
+  }
 
-  if (loading || !day) {
+  useEffect(load, [dayId]);
+
+  if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator color={color.orange500} />
+      </View>
+    );
+  }
+
+  if (error || !day) {
+    return (
+      <View style={[styles.container, styles.scroll]}>
+        <Pressable onPress={goHome} style={styles.back}>
+          <Text style={styles.backText}>‹ Voltar</Text>
+        </Pressable>
+        <LoadError onRetry={load} />
       </View>
     );
   }

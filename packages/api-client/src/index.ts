@@ -25,7 +25,7 @@ import {
 
 export * from "./types.js";
 
-/** Guarda e recupera o access token (implementado pelo app: memória, secure-store…). */
+/** Guarda e recupera um token (implementado pelo app: memória, secure-store…). */
 export interface TokenStore {
   get(): string | null | Promise<string | null>;
   set(token: string | null): void | Promise<void>;
@@ -34,16 +34,26 @@ export interface TokenStore {
 export interface ClientOptions {
   baseUrl: string;
   tokens: TokenStore;
+  /**
+   * Guarda do refresh token. Opcional só por compatibilidade — sem ele o
+   * access token (15min) expira e as chamadas passam a falhar com 401 sem
+   * recuperação, então todo app novo deve passar essa opção.
+   */
+  refreshTokens?: TokenStore;
 }
+
+const NO_REFRESH_PATHS = ["/auth/login", "/auth/register", "/auth/refresh"];
 
 /** Cliente HTTP tipado do RunUp, reusável por mobile e web. */
 export class RunUpClient {
+  private refreshInFlight: Promise<string | null> | null = null;
+
   constructor(private readonly options: ClientOptions) {}
 
   // --- Auth ---
   async register(input: RegisterInput): Promise<AuthResult> {
     const result = await this.request<AuthResult>("POST", "/auth/register", input);
-    await this.options.tokens.set(result.accessToken);
+    await this.storeTokens(result.accessToken, result.refreshToken);
     return result;
   }
 
@@ -52,17 +62,61 @@ export class RunUpClient {
       email,
       password,
     });
-    await this.options.tokens.set(result.accessToken);
+    await this.storeTokens(result.accessToken, result.refreshToken);
     return result;
   }
 
   async logout(): Promise<void> {
-    await this.options.tokens.set(null);
+    const refreshToken = await this.options.refreshTokens?.get();
+    if (refreshToken) {
+      // Revoga no servidor — melhor esforço, não bloqueia o logout local.
+      await this.request("POST", "/auth/logout", { refreshToken }).catch(() => {});
+    }
+    await this.storeTokens(null, null);
   }
 
-  /** Grava um access token obtido por fora (ex.: callback OAuth do Google). */
-  setAccessToken(token: string): void | Promise<void> {
-    return this.options.tokens.set(token);
+  /** Grava tokens obtidos por fora (ex.: callback OAuth do Google). */
+  async setSession(accessToken: string, refreshToken?: string): Promise<void> {
+    await this.storeTokens(accessToken, refreshToken ?? null);
+  }
+
+  private async storeTokens(accessToken: string | null, refreshToken: string | null) {
+    await this.options.tokens.set(accessToken);
+    await this.options.refreshTokens?.set(refreshToken);
+  }
+
+  /**
+   * Troca o refresh token guardado por um novo par. Deduplica chamadas
+   * concorrentes (várias telas podem levar 401 ao mesmo tempo).
+   */
+  private async tryRefresh(): Promise<string | null> {
+    if (!this.options.refreshTokens) return null;
+    if (this.refreshInFlight) return this.refreshInFlight;
+
+    this.refreshInFlight = (async () => {
+      const refreshToken = await this.options.refreshTokens!.get();
+      if (!refreshToken) return null;
+      try {
+        const res = await fetch(`${this.options.baseUrl}/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (!res.ok) throw new Error("refresh falhou");
+        const tokens = (await res.json()) as { accessToken: string; refreshToken: string };
+        await this.storeTokens(tokens.accessToken, tokens.refreshToken);
+        return tokens.accessToken;
+      } catch {
+        await this.storeTokens(null, null);
+        return null;
+      }
+    })();
+
+    try {
+      return await this.refreshInFlight;
+    } finally {
+      this.refreshInFlight = null;
+    }
   }
 
   googleAuthorizeUrl(
@@ -185,6 +239,7 @@ export class RunUpClient {
     method: string,
     path: string,
     body?: unknown,
+    isRetry = false,
   ): Promise<T> {
     const token = await this.options.tokens.get();
     const headers: Record<string, string> = {};
@@ -199,6 +254,18 @@ export class RunUpClient {
     });
 
     if (res.status === 204) return undefined as T;
+
+    // Access token expirado: tenta renovar (uma vez) e refaz a chamada
+    // original antes de desistir. Sem isso, a sessão "quebra" sozinha 15min
+    // depois do login, com telas silenciosamente parando de carregar dados.
+    if (
+      res.status === 401 &&
+      !isRetry &&
+      !NO_REFRESH_PATHS.some((p) => path.startsWith(p))
+    ) {
+      const newToken = await this.tryRefresh();
+      if (newToken) return this.request<T>(method, path, body, true);
+    }
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

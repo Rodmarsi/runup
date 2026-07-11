@@ -12,8 +12,9 @@ export default function AuthCallbackPage() {
     // O callback do Google devolve os tokens no fragmento (#access_token=...).
     const frag = new URLSearchParams(window.location.hash.slice(1));
     const token = frag.get("access_token");
+    const refreshToken = frag.get("refresh_token");
     if (token) {
-      Promise.resolve(api.setAccessToken(token)).then(() => router.replace("/"));
+      api.setSession(token, refreshToken ?? undefined).then(() => router.replace("/"));
     } else {
       router.replace("/login?error=google");
     }

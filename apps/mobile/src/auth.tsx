@@ -54,12 +54,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (result.type !== "success") return;
         // O callback devolve os tokens no fragmento (#access_token=...&refresh_token=...).
         const fragment = result.url.split("#")[1] ?? "";
-        const token = fragment
-          .split("&")
-          .map((pair) => pair.split("="))
-          .find(([key]) => key === "access_token")?.[1];
+        const pairs = Object.fromEntries(
+          fragment.split("&").map((pair) => pair.split("=")),
+        );
+        const token = pairs.access_token;
         if (!token) throw new Error("Login com Google não retornou um token");
-        await api.setAccessToken(decodeURIComponent(token));
+        await api.setSession(
+          decodeURIComponent(token),
+          pairs.refresh_token ? decodeURIComponent(pairs.refresh_token) : undefined,
+        );
         setUser(await api.me());
       },
       logout: async () => {

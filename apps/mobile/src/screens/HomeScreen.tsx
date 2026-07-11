@@ -15,6 +15,7 @@ import { useAuth } from "../auth.js";
 import { useNav } from "../nav.js";
 import { api } from "../api.js";
 import { km, pace } from "../format.js";
+import { LoadError } from "../components/LoadError.js";
 
 const WEEKDAYS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
@@ -48,20 +49,34 @@ export function HomeScreen() {
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
+    setError(false);
     Promise.all([api.calendar(), api.stats()])
       .then(([cal, st]) => {
         setDays(cal);
         setStats(st);
       })
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(load, []);
 
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator color={color.orange500} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.scroll]}>
+        <LoadError onRetry={load} />
       </View>
     );
   }

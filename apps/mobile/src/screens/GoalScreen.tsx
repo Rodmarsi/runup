@@ -13,6 +13,7 @@ import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { duration } from "../format.js";
+import { LoadError } from "../components/LoadError.js";
 
 const RACE_LABEL: Record<string, string> = {
   "5k": "5 km",
@@ -26,18 +27,35 @@ export function GoalScreen({ goalId }: { goalId: string }) {
   const { goHome } = useNav();
   const [data, setData] = useState<GoalOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
+    setError(false);
     api
       .goalOverview(goalId)
       .then(setData)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, [goalId]);
+  }
 
-  if (loading || !data) {
+  useEffect(load, [goalId]);
+
+  if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator color={color.orange500} />
+      </View>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <View style={[styles.container, styles.scroll]}>
+        <Pressable onPress={goHome} style={styles.back}>
+          <Text style={styles.backText}>‹ Voltar</Text>
+        </Pressable>
+        <LoadError onRetry={load} />
       </View>
     );
   }

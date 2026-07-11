@@ -22,6 +22,7 @@ import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { useAuth } from "../auth.js";
 import { km, duration } from "../format.js";
+import { LoadError } from "../components/LoadError.js";
 
 const RACE_LABEL: Record<string, string> = {
   "5k": "5 km",
@@ -40,6 +41,7 @@ export function EvolucaoScreen() {
   const [strava, setStrava] = useState<StravaStatus | null>(null);
   const [conversations, setConversations] = useState<ConversationDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [connectingStrava, setConnectingStrava] = useState(false);
   const [stravaError, setStravaError] = useState<string | null>(null);
@@ -59,9 +61,15 @@ export function EvolucaoScreen() {
     setConversations(conv);
   }
 
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, []);
+  function initialLoad() {
+    setLoading(true);
+    setError(false);
+    load()
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(initialLoad, []);
 
   async function sync() {
     setSyncing(true);
@@ -95,6 +103,14 @@ export function EvolucaoScreen() {
     return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator color={color.orange500} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.scroll]}>
+        <LoadError onRetry={initialLoad} />
       </View>
     );
   }
