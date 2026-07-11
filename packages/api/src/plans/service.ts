@@ -2,6 +2,7 @@ import type { PrismaClient } from "@runup/db";
 import { errors } from "../errors.js";
 import type {
   CreatePlanInput,
+  CreateSelfPlanInput,
   LogWorkoutInput,
   LogStandaloneWorkoutInput,
   ListWorkoutLogsQuery,
@@ -49,6 +50,42 @@ export class PlanService {
           planId: plan.id,
           studentId: input.studentId,
           startDate: new Date(input.startDate),
+        },
+      });
+
+      return plan;
+    });
+  }
+
+  /**
+   * O aluno cria seu próprio plano (manual ou confirmado a partir do preview
+   * do "Criar com IA") — vira dono E atribuído, sem depender de um treinador.
+   */
+  async createSelfPlan(studentId: string, input: CreateSelfPlanInput) {
+    return this.db.$transaction(async (tx) => {
+      const plan = await tx.plan.create({
+        data: {
+          ownerId: studentId,
+          type: "custom",
+          title: input.title,
+          durationWeeks: input.durationWeeks,
+        },
+      });
+
+      await tx.workoutDay.createMany({
+        data: input.days.map((d) => ({
+          planId: plan.id,
+          week: d.week,
+          date: new Date(d.date),
+          blocks: d.blocks,
+        })),
+      });
+
+      await tx.planAssignment.create({
+        data: {
+          planId: plan.id,
+          studentId,
+          startDate: new Date(input.days[0]!.date),
         },
       });
 

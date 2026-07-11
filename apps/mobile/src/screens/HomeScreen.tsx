@@ -38,6 +38,12 @@ function summarize(day: WorkoutDayDto): { title: string; sub: string } {
       sub: [dist, p].filter(Boolean).join(" · ") || "Treino do dia",
     };
   }
+  // Treino criado manualmente ou por IA: o nome vive num item "free".
+  const free = day.blocks.flatMap((b) => b.items).find((i) => i.kind === "free");
+  if (free && free.kind === "free") {
+    const [title, ...rest] = free.notes.split(" — ");
+    return { title: title || "Treino do dia", sub: rest.join(" — ") || "Treino do dia" };
+  }
   return { title: "Treino do dia", sub: "Força / mobilidade" };
 }
 

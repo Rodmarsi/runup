@@ -18,6 +18,8 @@ import { stravaRoutes } from "./strava/routes.js";
 import type { StravaClient } from "./strava/client.js";
 import type { GoogleClient } from "./auth/google/client.js";
 import { equipmentRoutes } from "./equipment/routes.js";
+import { aiPlanRoutes } from "./ai-plan/routes.js";
+import type { PlanGenerator } from "./ai-plan/generator.js";
 
 /** Formato padrão de erro da API: { code, message, details }. */
 export interface ApiError {
@@ -35,6 +37,8 @@ export interface BuildAppOptions {
   stravaClient?: StravaClient;
   /** Cliente Google (mock nos testes; produção usa a API do Google). */
   googleClient?: GoogleClient;
+  /** Gerador de planos por IA (mock nos testes; produção usa Claude/Gemini). */
+  aiPlanGenerator?: PlanGenerator;
 }
 
 export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
@@ -60,6 +64,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   app.register(excelImportRoutes(db, options.interpreter));
   app.register(stravaRoutes(db, options.stravaClient));
   app.register(equipmentRoutes(db));
+  app.register(aiPlanRoutes(options.aiPlanGenerator));
 
   app.setErrorHandler(
     (error: FastifyError, _request: FastifyRequest, reply: FastifyReply) => {

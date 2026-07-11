@@ -278,6 +278,33 @@ export interface ImportPreview {
   summary: { weeks: number; days: number; lowConfidence: number };
 }
 
+/** Plano que o próprio aluno cria (manual ou confirmando o preview da IA). */
+export interface CreateSelfPlanInput {
+  title: string;
+  durationWeeks: number;
+  days: { week: number; date: string; blocks: Block[] }[];
+}
+
+/** Respostas do questionário do "Criar com IA". */
+export interface GeneratePlanInput {
+  objective: string;
+  targetRace?: RaceDistance;
+  raceDate?: string;
+  /** Dias da semana disponíveis (0=domingo … 6=sábado). */
+  availableWeekdays: number[];
+  durationWeeks: number;
+  startDate: string;
+  experience: ExperienceLevel;
+  bestPaceSecPerKm?: number;
+  longestDistanceMeters?: number;
+  injuries?: string;
+}
+
+export interface AiPlanPreview {
+  plan: InterpretedPlan;
+  summary: { weeks: number; days: number };
+}
+
 /** Erro padronizado da API: { code, message, details }. */
 export class ApiError extends Error {
   constructor(

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from "react-native";
-import { color } from "@runup/ui/tokens";
+import { color, border } from "@runup/ui/tokens";
 import { font } from "../theme.js";
 import type { WorkoutDayDto } from "@runup/api-client";
 import { text } from "../theme.js";
@@ -77,7 +77,17 @@ export function PlanoScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <Text style={text.screenTitle}>Plano</Text>
+      <View style={styles.titleRow}>
+        <Text style={text.screenTitle}>Plano</Text>
+        <View style={styles.titleActions}>
+          <Pressable onPress={() => navigate({ name: "createWorkout" })} style={styles.actionBtn}>
+            <Text style={styles.actionBtnText}>+ Criar</Text>
+          </Pressable>
+          <Pressable onPress={() => navigate({ name: "aiPlanWizard" })} style={styles.actionBtn}>
+            <Text style={styles.actionBtnText}>✨ Criar com IA</Text>
+          </Pressable>
+        </View>
+      </View>
 
       <View style={styles.monthHeader}>
         <Pressable onPress={() => setMonthOffset((m) => m - 1)} style={styles.monthNavBtn}>
@@ -139,6 +149,17 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.surface0 },
   center: { justifyContent: "center", alignItems: "center" },
   scroll: { padding: 16, paddingBottom: 24 },
+  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 },
+  titleActions: { flexDirection: "row", gap: 6 },
+  actionBtn: {
+    backgroundColor: color.surface2,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  actionBtnText: { fontFamily: font.medium, fontSize: 11, color: color.textSecondary },
   monthHeader: {
     flexDirection: "row",
     alignItems: "center",

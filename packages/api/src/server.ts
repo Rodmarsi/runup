@@ -3,6 +3,9 @@ import { buildApp } from "./app.js";
 import { MockInterpreter } from "./excel-import/mock-interpreter.js";
 import { GeminiInterpreter } from "./excel-import/gemini-interpreter.js";
 import type { SpreadsheetInterpreter } from "./excel-import/interpreter.js";
+import { MockPlanGenerator } from "./ai-plan/mock-generator.js";
+import { GeminiPlanGenerator } from "./ai-plan/gemini-generator.js";
+import type { PlanGenerator } from "./ai-plan/generator.js";
 
 /**
  * Provedor de IA do import de Excel, por prioridade:
@@ -16,7 +19,18 @@ function resolveInterpreter(): SpreadsheetInterpreter | undefined {
   return undefined;
 }
 
-const app = buildApp({ interpreter: resolveInterpreter() });
+/** Mesma prioridade do import de Excel, pro "Criar com IA" do aluno. */
+function resolveAiPlanGenerator(): PlanGenerator | undefined {
+  if (process.env.RUNUP_MOCK_AI) return new MockPlanGenerator();
+  if (process.env.ANTHROPIC_API_KEY) return undefined; // rotas criam o ClaudePlanGenerator
+  if (process.env.GEMINI_API_KEY) return new GeminiPlanGenerator();
+  return undefined;
+}
+
+const app = buildApp({
+  interpreter: resolveInterpreter(),
+  aiPlanGenerator: resolveAiPlanGenerator(),
+});
 const port = Number(process.env.PORT ?? 3333);
 
 app

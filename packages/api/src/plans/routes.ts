@@ -6,6 +6,7 @@ import { PlanService } from "./service.js";
 import { GoalService } from "./goal-service.js";
 import {
   createPlanSchema,
+  createSelfPlanSchema,
   logWorkoutSchema,
   logStandaloneWorkoutSchema,
   listWorkoutLogsQuerySchema,
@@ -26,6 +27,14 @@ export function planRoutes(db: PrismaClient) {
       const parsed = createPlanSchema.safeParse(request.body);
       if (!parsed.success) throw errors.validation(parsed.error.flatten());
       const plan = await plans.createPlan(request.authUser!.id, parsed.data);
+      reply.status(201).send(plan);
+    });
+
+    // Aluno cria o próprio plano (manual ou confirmando o preview da IA).
+    app.post("/me/plans", asStudent, async (request, reply) => {
+      const parsed = createSelfPlanSchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      const plan = await plans.createSelfPlan(request.authUser!.id, parsed.data);
       reply.status(201).send(plan);
     });
 

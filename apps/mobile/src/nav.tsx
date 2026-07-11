@@ -12,7 +12,9 @@ export type Route =
   | { name: "equipment" }
   | { name: "settings" }
   | { name: "activity"; log: WorkoutLogDto }
-  | { name: "analytics" };
+  | { name: "analytics" }
+  | { name: "createWorkout" }
+  | { name: "aiPlanWizard" };
 
 interface Nav {
   route: Route;

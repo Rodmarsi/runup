@@ -27,6 +27,8 @@ import { EquipmentScreen } from "./src/screens/EquipmentScreen.js";
 import { SettingsScreen } from "./src/screens/SettingsScreen.js";
 import { ActivityDetailScreen } from "./src/screens/ActivityDetailScreen.js";
 import { AnalisesScreen } from "./src/screens/AnalisesScreen.js";
+import { CreateWorkoutScreen } from "./src/screens/CreateWorkoutScreen.js";
+import { AiPlanWizardScreen } from "./src/screens/AiPlanWizardScreen.js";
 
 function Router() {
   const { route } = useNav();
@@ -51,6 +53,10 @@ function Router() {
       return <ActivityDetailScreen log={route.log} />;
     case "analytics":
       return <AnalisesScreen />;
+    case "createWorkout":
+      return <CreateWorkoutScreen />;
+    case "aiPlanWizard":
+      return <AiPlanWizardScreen />;
     default:
       return <MainTabs />;
   }

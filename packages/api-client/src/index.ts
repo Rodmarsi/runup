@@ -28,6 +28,9 @@ import {
   type ShoeDto,
   type CreateShoeInput,
   type UpdateShoeInput,
+  type CreateSelfPlanInput,
+  type GeneratePlanInput,
+  type AiPlanPreview,
 } from "./types.js";
 
 export * from "./types.js";
@@ -277,6 +280,15 @@ export class RunUpClient {
       "/coach/import/excel/confirm",
       input,
     );
+  }
+
+  // --- Aluno cria seu próprio plano (manual ou via IA) ---
+  createSelfPlan(input: CreateSelfPlanInput): Promise<{ id: string }> {
+    return this.request<{ id: string }>("POST", "/me/plans", input);
+  }
+
+  generateAiPlan(input: GeneratePlanInput): Promise<AiPlanPreview> {
+    return this.request<AiPlanPreview>("POST", "/me/plans/ai-generate", input);
   }
 
   private async request<T = unknown>(

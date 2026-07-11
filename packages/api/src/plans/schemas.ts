@@ -19,6 +19,25 @@ export const createPlanSchema = z.object({
     .min(1),
 });
 
+/**
+ * Plano que o próprio aluno cria pra si (manual ou confirmado a partir do
+ * preview do "Criar com IA") — mesma forma do plano do treinador, mas sem
+ * exigir vínculo: o aluno já é o dono e o atribuído.
+ */
+export const createSelfPlanSchema = z.object({
+  title: z.string().min(1).max(120),
+  durationWeeks: z.number().int().positive().max(52),
+  days: z
+    .array(
+      z.object({
+        week: z.number().int().positive(),
+        date: isoDate,
+        blocks: blocksSchema,
+      }),
+    )
+    .min(1),
+});
+
 const splitSchema = z.object({
   km: z.number().int().positive(),
   paceSecPerKm: z.number().int().positive(),
@@ -70,6 +89,7 @@ export const createGoalSchema = z.object({
 });
 
 export type CreatePlanInput = z.infer<typeof createPlanSchema>;
+export type CreateSelfPlanInput = z.infer<typeof createSelfPlanSchema>;
 export type LogWorkoutInput = z.infer<typeof logWorkoutSchema>;
 export type LogStandaloneWorkoutInput = z.infer<typeof logStandaloneWorkoutSchema>;
 export type ListWorkoutLogsQuery = z.infer<typeof listWorkoutLogsQuerySchema>;
