@@ -9,7 +9,7 @@ import { DayRow } from "../components/DayRow.js";
 import { LoadError } from "../components/LoadError.js";
 import { localIsoDate } from "../format.js";
 
-export function TreinosScreen() {
+export function AtividadesScreen() {
   const { navigate } = useNav();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,35 +44,21 @@ export function TreinosScreen() {
   }
 
   const today = localIsoDate();
-  const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
-  const upcoming = sorted.filter((d) => d.date.slice(0, 10) >= today);
-  const past = sorted.filter((d) => d.date.slice(0, 10) < today).reverse();
+  const past = [...days]
+    .filter((d) => d.date.slice(0, 10) < today)
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <Text style={text.screenTitle}>Treinos</Text>
+      <Text style={text.screenTitle}>Atividades</Text>
 
-      {upcoming.length > 0 && (
-        <>
-          <Text style={[text.overline, styles.label]}>PRÓXIMOS</Text>
-          {upcoming.map((d) => (
-            <DayRow key={d.id} day={d} onPress={() => navigate({ name: "day", date: d.date.slice(0, 10) })} />
-          ))}
-        </>
-      )}
+      {past.map((d) => (
+        <DayRow key={d.id} day={d} onPress={() => navigate({ name: "day", date: d.date.slice(0, 10) })} />
+      ))}
 
-      {past.length > 0 && (
-        <>
-          <Text style={[text.overline, styles.label]}>REALIZADOS</Text>
-          {past.map((d) => (
-            <DayRow key={d.id} day={d} onPress={() => navigate({ name: "day", date: d.date.slice(0, 10) })} />
-          ))}
-        </>
-      )}
-
-      {days.length === 0 && (
+      {past.length === 0 && (
         <Text style={[text.secondary, styles.label]}>
-          Nenhum treino atribuído ainda.
+          Nenhuma atividade registrada ainda.
         </Text>
       )}
     </ScrollView>

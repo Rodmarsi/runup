@@ -3,17 +3,17 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { color, border } from "@runup/ui/tokens";
 import { font } from "../theme.js";
 import { HomeScreen } from "./HomeScreen.js";
-import { TreinosScreen } from "./TreinosScreen.js";
-import { AgendaScreen } from "./AgendaScreen.js";
-import { EvolucaoScreen } from "./EvolucaoScreen.js";
+import { PlanoScreen } from "./PlanoScreen.js";
+import { AtividadesScreen } from "./AtividadesScreen.js";
+import { ProfileScreen } from "./ProfileScreen.js";
 
-type Tab = "hoje" | "treinos" | "agenda" | "evolucao";
+type Tab = "hoje" | "plano" | "atividades" | "perfil";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "hoje", label: "Hoje" },
-  { key: "treinos", label: "Treinos" },
-  { key: "agenda", label: "Agenda" },
-  { key: "evolucao", label: "Evolução" },
+  { key: "plano", label: "Plano" },
+  { key: "atividades", label: "Atividades" },
+  { key: "perfil", label: "Perfil" },
 ];
 
 export function MainTabs() {
@@ -22,10 +22,10 @@ export function MainTabs() {
   return (
     <View style={styles.container}>
       <View style={styles.body}>
-        {tab === "hoje" && <HomeScreen />}
-        {tab === "treinos" && <TreinosScreen />}
-        {tab === "agenda" && <AgendaScreen />}
-        {tab === "evolucao" && <EvolucaoScreen />}
+        {tab === "hoje" && <HomeScreen onOpenProfile={() => setTab("perfil")} />}
+        {tab === "plano" && <PlanoScreen />}
+        {tab === "atividades" && <AtividadesScreen />}
+        {tab === "perfil" && <ProfileScreen />}
       </View>
 
       <View style={styles.tabbar}>

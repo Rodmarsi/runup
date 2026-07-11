@@ -32,6 +32,7 @@ export interface WorkoutDayDto {
   date: string;
   status: WorkoutDayStatus;
   blocks: Block[];
+  mandatoryRecovery: boolean;
 }
 
 export interface WorkoutCommentDto {

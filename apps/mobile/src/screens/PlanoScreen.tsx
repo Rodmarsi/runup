@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from "react-native";
-import { color, border } from "@runup/ui/tokens";
+import { color } from "@runup/ui/tokens";
+import { font } from "../theme.js";
 import type { WorkoutDayDto } from "@runup/api-client";
-import { text, font } from "../theme.js";
+import { text } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { DayRow } from "../components/DayRow.js";
+import { DayDots } from "../components/DayDots.js";
 import { LoadError } from "../components/LoadError.js";
 import { localIsoDate } from "../format.js";
 
@@ -26,7 +28,7 @@ function monthGrid(year: number, month: number): (Date | null)[] {
   return cells;
 }
 
-export function AgendaScreen() {
+export function PlanoScreen() {
   const { navigate } = useNav();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +77,7 @@ export function AgendaScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <Text style={text.screenTitle}>Agenda</Text>
+      <Text style={text.screenTitle}>Plano</Text>
 
       <View style={styles.monthHeader}>
         <Pressable onPress={() => setMonthOffset((m) => m - 1)} style={styles.monthNavBtn}>
@@ -112,7 +114,7 @@ export function AgendaScreen() {
               <Text style={[styles.cellText, isToday && styles.cellTextToday]}>
                 {date.getDate()}
               </Text>
-              <View style={[styles.cellDot, dotStyle(d?.status)]} />
+              <DayDots day={d} />
             </Pressable>
           );
         })}
@@ -131,13 +133,6 @@ export function AgendaScreen() {
       )}
     </ScrollView>
   );
-}
-
-function dotStyle(status?: WorkoutDayDto["status"]) {
-  if (status === "done" || status === "partial") return { backgroundColor: color.success };
-  if (status === "skipped") return { backgroundColor: color.danger };
-  if (status) return { backgroundColor: color.orange500 };
-  return { backgroundColor: "transparent" };
 }
 
 const styles = StyleSheet.create({
@@ -178,6 +173,5 @@ const styles = StyleSheet.create({
   },
   cellText: { fontFamily: font.regular, fontSize: 13, color: color.textSecondary },
   cellTextToday: { fontFamily: font.semibold, color: color.orange400 },
-  cellDot: { width: 6, height: 6, borderRadius: 99 },
   label: { marginTop: 18, marginBottom: 8 },
 });

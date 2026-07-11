@@ -16,6 +16,7 @@ import { useNav } from "../nav.js";
 import { api } from "../api.js";
 import { km, pace, localIsoDate, greeting } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
+import { DayDots } from "../components/DayDots.js";
 
 const WEEKDAYS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
@@ -39,7 +40,7 @@ function summarize(day: WorkoutDayDto): { title: string; sub: string } {
   return { title: "Treino do dia", sub: "Força / mobilidade" };
 }
 
-export function HomeScreen() {
+export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   const { user } = useAuth();
   const { navigate } = useNav();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
@@ -100,7 +101,7 @@ export function HomeScreen() {
         {/* Cabeçalho */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Pressable onPress={() => navigate({ name: "profile" })} style={styles.avatar}>
+            <Pressable onPress={onOpenProfile} style={styles.avatar}>
               <Text style={styles.avatarText}>
                 {user?.name.charAt(0).toUpperCase() ?? "?"}
               </Text>
@@ -152,7 +153,7 @@ export function HomeScreen() {
                 <Text style={[styles.dayNum, isToday && styles.dayTextToday]}>
                   {iso.slice(8, 10)}
                 </Text>
-                <View style={[styles.dot, dotStyle(d?.status)]} />
+                <DayDots day={d} />
               </Pressable>
             );
           })}
@@ -249,13 +250,6 @@ function currentWeek(weekOffset = 0): string[] {
   });
 }
 
-function dotStyle(status?: WorkoutDayDto["status"]) {
-  if (status === "done" || status === "partial") return { backgroundColor: color.success };
-  if (status === "skipped") return { backgroundColor: color.danger };
-  if (status) return { backgroundColor: color.orange500 }; // "pending" — treino agendado
-  return { backgroundColor: "transparent" };
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.surface0 },
   center: { justifyContent: "center", alignItems: "center" },
@@ -306,7 +300,6 @@ const styles = StyleSheet.create({
   dayDow: { fontFamily: font.regular, fontSize: 9, color: color.textFaint },
   dayNum: { fontFamily: font.regular, fontSize: 12, color: color.textSecondary, marginVertical: 1 },
   dayTextToday: { color: color.ink, fontFamily: font.semibold },
-  dot: { width: 6, height: 6, borderRadius: 99, marginTop: 2 },
   hero: { borderRadius: 14, padding: 16, marginBottom: 12 },
   heroOverline: {
     fontFamily: font.semibold,
