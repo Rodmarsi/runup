@@ -6,7 +6,10 @@ export type Route =
   | { name: "checkin"; dayId: string }
   | { name: "logWorkout" }
   | { name: "goal"; goalId: string }
-  | { name: "chat"; linkId: string; withName: string };
+  | { name: "chat"; linkId: string; withName: string }
+  | { name: "bodyInfo" }
+  | { name: "equipment" }
+  | { name: "settings" };
 
 interface Nav {
   route: Route;

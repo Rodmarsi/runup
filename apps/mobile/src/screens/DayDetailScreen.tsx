@@ -14,7 +14,8 @@ import type { WorkoutDayDetailDto, WorkoutDayDto, SplitDto } from "@runup/api-cl
 import { text, font, gradients } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { km, pace, duration, localIsoDate } from "../format.js";
+import { useSettings } from "../settings.js";
+import { km, pace, duration, localIsoDate, distance, paceForUnits, unitLabel, paceUnitLabel } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 
 const ROLE_LABEL: Record<Block["role"], string> = {
@@ -76,6 +77,7 @@ function splitBarWidth(paceSecPerKm: number, splits: SplitDto[]): number {
 
 export function DayDetailScreen({ date }: { date: string }) {
   const { goHome, navigate } = useNav();
+  const { units } = useSettings();
   const [currentDate, setCurrentDate] = useState(date);
   const [calendar, setCalendar] = useState<WorkoutDayDto[] | null>(null);
   const [detail, setDetail] = useState<WorkoutDayDetailDto | null>(null);
@@ -165,7 +167,9 @@ export function DayDetailScreen({ date }: { date: string }) {
                       <View style={styles.resultCol}>
                         <Text style={text.muted}>Distância</Text>
                         <Text style={styles.resultValue}>
-                          {log.distanceMeters ? `${km(log.distanceMeters)} km` : "—"}
+                          {log.distanceMeters
+                            ? `${distance(log.distanceMeters, units)} ${unitLabel(units)}`
+                            : "—"}
                         </Text>
                       </View>
                       <View style={styles.resultCol}>
@@ -176,7 +180,9 @@ export function DayDetailScreen({ date }: { date: string }) {
                       </View>
                       <View style={styles.resultCol}>
                         <Text style={text.muted}>Ritmo médio</Text>
-                        <Text style={styles.resultValue}>{pace(log.avgPaceSecPerKm)}/km</Text>
+                        <Text style={styles.resultValue}>
+                          {paceForUnits(log.avgPaceSecPerKm, units)}{paceUnitLabel(units)}
+                        </Text>
                       </View>
                     </View>
 

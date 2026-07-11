@@ -21,6 +21,11 @@ import {
   type ImportPreview,
   type LogWorkoutInput,
   type LogStandaloneWorkoutInput,
+  type AthleteProfileDto,
+  type AthleteProfileInput,
+  type ShoeDto,
+  type CreateShoeInput,
+  type UpdateShoeInput,
 } from "./types.js";
 
 export * from "./types.js";
@@ -133,6 +138,10 @@ export class RunUpClient {
     return this.request<AuthUser>("GET", "/auth/me");
   }
 
+  updateMe(name: string): Promise<AuthUser> {
+    return this.request<AuthUser>("PATCH", "/auth/me", { name });
+  }
+
   // --- Aluno ---
   calendar(): Promise<WorkoutDayDto[]> {
     return this.request<WorkoutDayDto[]>("GET", "/me/calendar");
@@ -164,6 +173,31 @@ export class RunUpClient {
 
   personalRecords(): Promise<PersonalRecordDto[]> {
     return this.request<PersonalRecordDto[]>("GET", "/me/personal-records");
+  }
+
+  athleteProfile(): Promise<AthleteProfileDto> {
+    return this.request<AthleteProfileDto>("GET", "/me/athlete-profile");
+  }
+
+  updateAthleteProfile(input: AthleteProfileInput): Promise<AthleteProfileDto> {
+    return this.request<AthleteProfileDto>("PUT", "/me/athlete-profile", input);
+  }
+
+  // --- Equipamentos ---
+  shoes(): Promise<ShoeDto[]> {
+    return this.request<ShoeDto[]>("GET", "/me/shoes");
+  }
+
+  createShoe(input: CreateShoeInput): Promise<ShoeDto> {
+    return this.request<ShoeDto>("POST", "/me/shoes", input);
+  }
+
+  updateShoe(id: string, input: UpdateShoeInput): Promise<ShoeDto> {
+    return this.request<ShoeDto>("PATCH", `/me/shoes/${id}`, input);
+  }
+
+  deleteShoe(id: string) {
+    return this.request("DELETE", `/me/shoes/${id}`);
   }
 
   // --- Mensagens ---

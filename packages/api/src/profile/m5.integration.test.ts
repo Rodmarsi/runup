@@ -82,6 +82,51 @@ describe("perfil: métricas e recordes", () => {
   });
 });
 
+describe("perfil do atleta e edição de conta", () => {
+  it("aluno cria e atualiza as informações do perfil (altura, sexo, FC máx...)", async () => {
+    const s = await register("student", "athlete1@runup.app");
+
+    const empty = await app.inject({
+      method: "GET",
+      url: "/me/athlete-profile",
+      headers: auth(s.token),
+    });
+    expect(empty.json().heightCm).toBeUndefined();
+
+    const saved = await app.inject({
+      method: "PUT",
+      url: "/me/athlete-profile",
+      headers: auth(s.token),
+      payload: {
+        heightCm: 178,
+        sex: "male",
+        hrMaxBpm: 190,
+        experience: "intermediate",
+        weeklyAvailabilityDays: 4,
+      },
+    });
+    expect(saved.json()).toMatchObject({ heightCm: 178, sex: "male", hrMaxBpm: 190 });
+
+    const fetched = await app.inject({
+      method: "GET",
+      url: "/me/athlete-profile",
+      headers: auth(s.token),
+    });
+    expect(fetched.json()).toMatchObject({ heightCm: 178, experience: "intermediate" });
+  });
+
+  it("aluno edita o próprio nome", async () => {
+    const s = await register("student", "editme1@runup.app");
+    const res = await app.inject({
+      method: "PATCH",
+      url: "/auth/me",
+      headers: auth(s.token),
+      payload: { name: "Novo Nome" },
+    });
+    expect(res.json()).toMatchObject({ name: "Novo Nome" });
+  });
+});
+
 describe("estatísticas", () => {
   it("agrega distância e conta treinos concluídos", async () => {
     const { coach, student } = await linkedPair("st1");

@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@runup/db";
 import { computeStreak } from "./streak.js";
-import type { BodyMetricInput, PersonalRecordInput } from "./schemas.js";
+import type { BodyMetricInput, PersonalRecordInput, AthleteProfileInput } from "./schemas.js";
 
 const COMPLETED = ["done", "partial"] as const;
 
@@ -52,6 +52,19 @@ export class ProfileService {
     return this.db.personalRecord.findMany({
       where: { studentId },
       orderBy: { achievedAt: "desc" },
+    });
+  }
+
+  getAthleteProfile(studentId: string) {
+    return this.db.athleteProfile.findUnique({ where: { studentId } });
+  }
+
+  upsertAthleteProfile(studentId: string, input: AthleteProfileInput) {
+    const birthDate = input.birthDate ? new Date(input.birthDate) : undefined;
+    return this.db.athleteProfile.upsert({
+      where: { studentId },
+      create: { studentId, ...input, birthDate },
+      update: { ...input, birthDate },
     });
   }
 

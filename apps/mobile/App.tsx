@@ -14,6 +14,7 @@ import {
 import { color } from "@runup/ui/tokens";
 import { AuthProvider, useAuth } from "./src/auth.js";
 import { NavProvider, useNav } from "./src/nav.js";
+import { SettingsProvider } from "./src/settings.js";
 import { LoginScreen } from "./src/screens/LoginScreen.js";
 import { MainTabs } from "./src/screens/MainTabs.js";
 import { DayDetailScreen } from "./src/screens/DayDetailScreen.js";
@@ -21,6 +22,9 @@ import { CheckinScreen } from "./src/screens/CheckinScreen.js";
 import { LogWorkoutScreen } from "./src/screens/LogWorkoutScreen.js";
 import { GoalScreen } from "./src/screens/GoalScreen.js";
 import { ChatScreen } from "./src/screens/ChatScreen.js";
+import { BodyInfoScreen } from "./src/screens/BodyInfoScreen.js";
+import { EquipmentScreen } from "./src/screens/EquipmentScreen.js";
+import { SettingsScreen } from "./src/screens/SettingsScreen.js";
 
 function Router() {
   const { route } = useNav();
@@ -35,6 +39,12 @@ function Router() {
       return <GoalScreen goalId={route.goalId} />;
     case "chat":
       return <ChatScreen linkId={route.linkId} withName={route.withName} />;
+    case "bodyInfo":
+      return <BodyInfoScreen />;
+    case "equipment":
+      return <EquipmentScreen />;
+    case "settings":
+      return <SettingsScreen />;
     default:
       return <MainTabs />;
   }
@@ -76,10 +86,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        <AuthProvider>
-          <Gate />
-          <StatusBar style="light" />
-        </AuthProvider>
+        <SettingsProvider>
+          <AuthProvider>
+            <Gate />
+            <StatusBar style="light" />
+          </AuthProvider>
+        </SettingsProvider>
       </SafeAreaView>
     </SafeAreaProvider>
   );

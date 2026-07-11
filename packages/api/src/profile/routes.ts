@@ -3,7 +3,7 @@ import type { PrismaClient } from "@runup/db";
 import { errors } from "../errors.js";
 import { requireRole } from "../auth/middleware.js";
 import { ProfileService } from "./service.js";
-import { bodyMetricSchema, personalRecordSchema } from "./schemas.js";
+import { bodyMetricSchema, personalRecordSchema, athleteProfileSchema } from "./schemas.js";
 
 export function profileRoutes(db: PrismaClient) {
   const profile = new ProfileService(db);
@@ -37,6 +37,17 @@ export function profileRoutes(db: PrismaClient) {
 
     app.get("/me/stats", asStudent, async (request) => {
       return profile.stats(request.authUser!.id);
+    });
+
+    app.get("/me/athlete-profile", asStudent, async (request) => {
+      const p = await profile.getAthleteProfile(request.authUser!.id);
+      return p ?? { studentId: request.authUser!.id };
+    });
+
+    app.put("/me/athlete-profile", asStudent, async (request) => {
+      const parsed = athleteProfileSchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      return profile.upsertAthleteProfile(request.authUser!.id, parsed.data);
     });
   };
 }

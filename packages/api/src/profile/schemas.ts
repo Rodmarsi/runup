@@ -14,5 +14,16 @@ export const personalRecordSchema = z.object({
   achievedAt: isoDate,
 });
 
+export const athleteProfileSchema = z.object({
+  heightCm: z.number().positive().max(260).optional(),
+  birthDate: isoDate.optional(),
+  sex: z.enum(["male", "female", "other"]).optional(),
+  hrMaxBpm: z.number().int().positive().max(250).optional(),
+  vo2max: z.number().positive().max(100).optional(),
+  experience: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+  weeklyAvailabilityDays: z.number().int().min(0).max(7).optional(),
+});
+
 export type BodyMetricInput = z.infer<typeof bodyMetricSchema>;
 export type PersonalRecordInput = z.infer<typeof personalRecordSchema>;
+export type AthleteProfileInput = z.infer<typeof athleteProfileSchema>;

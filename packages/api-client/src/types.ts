@@ -117,6 +117,58 @@ export interface LogStandaloneWorkoutInput {
   notes?: string;
 }
 
+export type Sex = "male" | "female" | "other";
+export type ExperienceLevel = "beginner" | "intermediate" | "advanced";
+
+export interface AthleteProfileDto {
+  studentId: string;
+  heightCm?: number;
+  birthDate?: string;
+  sex?: Sex;
+  hrMaxBpm?: number;
+  vo2max?: number;
+  experience?: ExperienceLevel;
+  weeklyAvailabilityDays?: number;
+}
+
+export interface AthleteProfileInput {
+  heightCm?: number;
+  birthDate?: string;
+  sex?: Sex;
+  hrMaxBpm?: number;
+  vo2max?: number;
+  experience?: ExperienceLevel;
+  weeklyAvailabilityDays?: number;
+}
+
+export interface ShoeDto {
+  id: string;
+  studentId: string;
+  name: string;
+  brand: string | null;
+  model: string | null;
+  totalKm: number;
+  alertKm: number | null;
+  retiredAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateShoeInput {
+  name: string;
+  brand?: string;
+  model?: string;
+  alertKm?: number;
+}
+
+export interface UpdateShoeInput {
+  name?: string;
+  brand?: string;
+  model?: string;
+  totalKm?: number;
+  alertKm?: number;
+  retired?: boolean;
+}
+
 export interface GoalDto {
   id: string;
   targetRace: RaceDistance;

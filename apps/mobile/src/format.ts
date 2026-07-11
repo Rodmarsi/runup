@@ -31,6 +31,35 @@ export function pace(secPerKm: number | null): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/**
+ * Unidade de distância preferida (tela Configurações). Usada só nos números
+ * de desempenho real do aluno (estatísticas, resultado do treino) — planos
+ * prescritos pelo treinador continuam em km, como foram escritos.
+ */
+export type Units = "km" | "mi";
+const KM_PER_MI = 1.609344;
+
+/** Distância (em metros) formatada na unidade escolhida, sem sufixo. */
+export function distance(meters: number, units: Units): string {
+  const valueKm = meters / 1000;
+  const value = units === "mi" ? valueKm / KM_PER_MI : valueKm;
+  return value.toFixed(1).replace(".", ",");
+}
+
+/** Pace (s/km) convertido pra unidade escolhida e formatado como "m:ss". */
+export function paceForUnits(secPerKm: number | null, units: Units): string {
+  if (secPerKm === null) return "—";
+  return pace(units === "mi" ? secPerKm * KM_PER_MI : secPerKm);
+}
+
+export function unitLabel(units: Units): string {
+  return units === "mi" ? "mi" : "km";
+}
+
+export function paceUnitLabel(units: Units): string {
+  return units === "mi" ? "/mi" : "/km";
+}
+
 /** Duração em s como "1h52" ou "31:47". */
 export function duration(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);

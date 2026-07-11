@@ -5,7 +5,7 @@ import { errors } from "../errors.js";
 import { config } from "../config.js";
 import { AuthService } from "./service.js";
 import { requireAuth } from "./middleware.js";
-import { registerSchema, loginSchema, refreshSchema } from "./schemas.js";
+import { registerSchema, loginSchema, refreshSchema, updateMeSchema } from "./schemas.js";
 import { GoogleAuthService } from "./google/service.js";
 import { HttpGoogleClient } from "./google/http-client.js";
 import type { GoogleClient } from "./google/client.js";
@@ -97,6 +97,16 @@ export function authRoutes(db: PrismaClient, googleClient?: GoogleClient) {
       });
       if (!user) throw errors.unauthorized();
       return user;
+    });
+
+    app.patch("/auth/me", { preHandler: requireAuth }, async (request) => {
+      const parsed = updateMeSchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      return db.user.update({
+        where: { id: request.authUser!.id },
+        data: { name: parsed.data.name },
+        select: { id: true, name: true, email: true, role: true },
+      });
     });
   };
 }

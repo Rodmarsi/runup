@@ -17,6 +17,7 @@ import type { SpreadsheetInterpreter } from "./excel-import/interpreter.js";
 import { stravaRoutes } from "./strava/routes.js";
 import type { StravaClient } from "./strava/client.js";
 import type { GoogleClient } from "./auth/google/client.js";
+import { equipmentRoutes } from "./equipment/routes.js";
 
 /** Formato padrão de erro da API: { code, message, details }. */
 export interface ApiError {
@@ -58,6 +59,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   app.register(messagingRoutes(db));
   app.register(excelImportRoutes(db, options.interpreter));
   app.register(stravaRoutes(db, options.stravaClient));
+  app.register(equipmentRoutes(db));
 
   app.setErrorHandler(
     (error: FastifyError, _request: FastifyRequest, reply: FastifyReply) => {

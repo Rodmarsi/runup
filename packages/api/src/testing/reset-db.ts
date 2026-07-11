@@ -15,5 +15,11 @@ export async function resetDb() {
   await prisma.subscription.deleteMany();
   await prisma.coachStudent.deleteMany();
   await prisma.refreshToken.deleteMany();
+  await prisma.athleteProfile.deleteMany();
+  await prisma.athleteProgress.deleteMany();
+  await prisma.achievement.deleteMany();
+  await prisma.mission.deleteMany();
+  await prisma.shoe.deleteMany();
+  await prisma.race.deleteMany();
   await prisma.user.deleteMany();
 }

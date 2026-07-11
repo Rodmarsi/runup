@@ -4,8 +4,10 @@ import {
   Text,
   ScrollView,
   Pressable,
+  TextInput,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { color, border } from "@runup/ui/tokens";
@@ -21,7 +23,8 @@ import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { useAuth } from "../auth.js";
-import { km, duration } from "../format.js";
+import { useSettings } from "../settings.js";
+import { duration, distance, unitLabel } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 
 const RACE_LABEL: Record<string, string> = {
@@ -33,8 +36,12 @@ const RACE_LABEL: Record<string, string> = {
 };
 
 export function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateName } = useAuth();
   const { navigate } = useNav();
+  const { units } = useSettings();
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(user?.name ?? "");
+  const [savingName, setSavingName] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [prs, setPrs] = useState<PersonalRecordDto[]>([]);
   const [goals, setGoals] = useState<GoalDto[]>([]);
@@ -99,6 +106,19 @@ export function ProfileScreen() {
     }
   }
 
+  async function saveName() {
+    if (!nameInput.trim()) return;
+    setSavingName(true);
+    try {
+      await updateName(nameInput.trim());
+      setEditingName(false);
+    } catch {
+      Alert.alert("Não foi possível atualizar o nome. Tente de novo.");
+    } finally {
+      setSavingName(false);
+    }
+  }
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -129,7 +149,7 @@ export function ProfileScreen() {
 
       {/* Estatísticas */}
       <View style={styles.statGrid}>
-        <Stat label="Distância total" value={`${km(stats?.totalDistanceMeters ?? 0)} km`} />
+        <Stat label="Distância total" value={`${distance(stats?.totalDistanceMeters ?? 0, units)} ${unitLabel(units)}`} />
         <Stat label="Tempo total" value={duration(stats?.totalTimeSeconds ?? 0)} />
         <Stat label="Treinos" value={String(stats?.workoutCount ?? 0)} />
         <Stat label="Sequência" value={`${stats?.streakDays ?? 0} dias`} />
@@ -227,10 +247,41 @@ export function ProfileScreen() {
 
       <Text style={[text.overline, styles.label]}>CONTA</Text>
       <View style={styles.card}>
-        <View style={styles.row}>
-          <Text style={text.muted}>Nome</Text>
-          <Text style={styles.rowValue}>{user?.name}</Text>
-        </View>
+        {editingName ? (
+          <View style={[styles.row, styles.editRow]}>
+            <TextInput
+              style={styles.nameInput}
+              value={nameInput}
+              onChangeText={setNameInput}
+              autoFocus
+              placeholder="Seu nome"
+              placeholderTextColor={color.textFaint}
+            />
+            <Pressable onPress={saveName} disabled={savingName} style={styles.editBtn}>
+              <Text style={styles.editBtnText}>{savingName ? "..." : "Salvar"}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setNameInput(user?.name ?? "");
+                setEditingName(false);
+              }}
+              style={styles.editBtn}
+            >
+              <Text style={styles.editBtnTextMuted}>Cancelar</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => {
+              setNameInput(user?.name ?? "");
+              setEditingName(true);
+            }}
+            style={styles.row}
+          >
+            <Text style={text.muted}>Nome</Text>
+            <Text style={styles.rowValue}>{user?.name} · editar</Text>
+          </Pressable>
+        )}
         <View style={[styles.row, styles.rowDivider]}>
           <Text style={text.muted}>E-mail</Text>
           <Text style={styles.rowValue}>{user?.email}</Text>
@@ -240,6 +291,20 @@ export function ProfileScreen() {
           <Text style={styles.rowValue}>Aluno</Text>
         </View>
       </View>
+
+      <Text style={[text.overline, styles.label]}>MAIS</Text>
+      <Pressable onPress={() => navigate({ name: "bodyInfo" })} style={styles.rowCard}>
+        <Text style={[styles.rowTitle, { flex: 1 }]}>Informações</Text>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
+      <Pressable onPress={() => navigate({ name: "equipment" })} style={styles.rowCard}>
+        <Text style={[styles.rowTitle, { flex: 1 }]}>Equipamentos</Text>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
+      <Pressable onPress={() => navigate({ name: "settings" })} style={styles.rowCard}>
+        <Text style={[styles.rowTitle, { flex: 1 }]}>Configurações</Text>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
 
       <Pressable onPress={logout} style={styles.logout}>
         <Text style={styles.logoutText}>Sair</Text>
@@ -335,6 +400,19 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 14 },
   rowDivider: { borderTopWidth: 1, borderTopColor: border.hairline },
   rowValue: { fontFamily: font.medium, fontSize: 13, color: color.textPrimary },
+  editRow: { alignItems: "center", gap: 8 },
+  nameInput: {
+    flex: 1,
+    fontFamily: font.regular,
+    fontSize: 14,
+    color: color.textPrimary,
+    borderBottomWidth: 1,
+    borderBottomColor: border.strong,
+    paddingVertical: 4,
+  },
+  editBtn: { paddingHorizontal: 4, paddingVertical: 4 },
+  editBtnText: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
+  editBtnTextMuted: { fontFamily: font.medium, fontSize: 12, color: color.textFaint },
   logout: {
     marginTop: 24,
     alignItems: "center",

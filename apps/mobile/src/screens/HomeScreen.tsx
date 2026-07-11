@@ -13,8 +13,9 @@ import type { WorkoutDayDto, Stats } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { useAuth } from "../auth.js";
 import { useNav } from "../nav.js";
+import { useSettings } from "../settings.js";
 import { api } from "../api.js";
-import { km, pace, localIsoDate, greeting } from "../format.js";
+import { km, pace, localIsoDate, greeting, distance, paceForUnits, unitLabel, paceUnitLabel } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 import { DayDots } from "../components/DayDots.js";
 
@@ -43,6 +44,7 @@ function summarize(day: WorkoutDayDto): { title: string; sub: string } {
 export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   const { user } = useAuth();
   const { navigate } = useNav();
+  const { units } = useSettings();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -222,15 +224,15 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
           <View style={styles.metricCard}>
             <Text style={text.muted}>Distância da semana</Text>
             <Text style={styles.metricValue}>
-              {km(stats?.weeklyDistanceMeters ?? 0)}{" "}
-              <Text style={styles.metricUnit}>km</Text>
+              {distance(stats?.weeklyDistanceMeters ?? 0, units)}{" "}
+              <Text style={styles.metricUnit}>{unitLabel(units)}</Text>
             </Text>
           </View>
           <View style={styles.metricCard}>
             <Text style={text.muted}>Pace médio</Text>
             <Text style={styles.metricValue}>
-              {pace(stats?.avgPaceSecPerKm ?? null)}{" "}
-              <Text style={styles.metricUnit}>/km</Text>
+              {paceForUnits(stats?.avgPaceSecPerKm ?? null, units)}{" "}
+              <Text style={styles.metricUnit}>{paceUnitLabel(units)}</Text>
             </Text>
           </View>
         </View>
