@@ -41,8 +41,31 @@ export interface WorkoutCommentDto {
   createdAt: string;
 }
 
+export interface SplitDto {
+  km: number;
+  paceSecPerKm: number;
+}
+
+export interface WorkoutLogDto {
+  id: string;
+  source: "manual" | "strava";
+  completedAt: string;
+  distanceMeters: number | null;
+  durationSeconds: number | null;
+  avgPaceSecPerKm: number | null;
+  avgHeartRate: number | null;
+  cadence: number | null;
+  elevationGainM: number | null;
+  splits: SplitDto[] | null;
+  perceivedEffort: number | null;
+  pain: string | null;
+  notes: string | null;
+}
+
 export interface WorkoutDayDetailDto extends WorkoutDayDto {
   comments: WorkoutCommentDto[];
+  /** Resultado(s) real(is) registrado(s) pelo aluno para este dia (check-in). */
+  logs: WorkoutLogDto[];
 }
 
 export interface Stats {

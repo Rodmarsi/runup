@@ -21,6 +21,7 @@ import { CheckinScreen } from "./src/screens/CheckinScreen.js";
 import { LogWorkoutScreen } from "./src/screens/LogWorkoutScreen.js";
 import { GoalScreen } from "./src/screens/GoalScreen.js";
 import { ChatScreen } from "./src/screens/ChatScreen.js";
+import { ProfileScreen } from "./src/screens/ProfileScreen.js";
 
 function Router() {
   const { route } = useNav();
@@ -35,6 +36,8 @@ function Router() {
       return <GoalScreen goalId={route.goalId} />;
     case "chat":
       return <ChatScreen linkId={route.linkId} withName={route.withName} />;
+    case "profile":
+      return <ProfileScreen />;
     default:
       return <MainTabs />;
   }

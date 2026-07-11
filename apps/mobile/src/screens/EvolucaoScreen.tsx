@@ -20,7 +20,6 @@ import type {
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { useAuth } from "../auth.js";
 import { km, duration } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 
@@ -34,7 +33,6 @@ const RACE_LABEL: Record<string, string> = {
 
 export function EvolucaoScreen() {
   const { navigate } = useNav();
-  const { logout } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [prs, setPrs] = useState<PersonalRecordDto[]>([]);
   const [goals, setGoals] = useState<GoalDto[]>([]);
@@ -117,7 +115,12 @@ export function EvolucaoScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <Text style={text.screenTitle}>Evolução</Text>
+      <View style={styles.titleRow}>
+        <Text style={text.screenTitle}>Evolução</Text>
+        <Pressable onPress={() => navigate({ name: "profile" })} style={styles.profileBtn}>
+          <Text style={styles.profileBtnText}>Perfil</Text>
+        </Pressable>
+      </View>
 
       {/* Estatísticas */}
       <View style={styles.statGrid}>
@@ -216,10 +219,6 @@ export function EvolucaoScreen() {
         )}
       </View>
       {stravaError && <Text style={styles.error}>{stravaError}</Text>}
-
-      <Pressable onPress={logout} style={styles.logout}>
-        <Text style={styles.logoutText}>Sair</Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -237,6 +236,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.surface0 },
   center: { justifyContent: "center", alignItems: "center" },
   scroll: { padding: 16, paddingBottom: 32 },
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  profileBtn: {
+    backgroundColor: color.surface2,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  profileBtnText: { fontFamily: font.medium, fontSize: 12, color: color.textSecondary },
   label: { marginTop: 18, marginBottom: 8 },
   statGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   statCard: {
@@ -288,14 +301,5 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   badgeText: { fontFamily: font.semibold, fontSize: 10, color: color.ink },
-  logout: {
-    marginTop: 24,
-    alignItems: "center",
-    paddingVertical: 12,
-    borderRadius: 99,
-    borderWidth: 1,
-    borderColor: border.strong,
-  },
-  logoutText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
   error: { fontFamily: font.regular, fontSize: 12, color: color.danger, marginTop: 8 },
 });

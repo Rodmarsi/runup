@@ -22,7 +22,7 @@ export function MainTabs() {
   return (
     <View style={styles.container}>
       <View style={styles.body}>
-        {tab === "hoje" && <HomeScreen onOpenProfile={() => setTab("evolucao")} />}
+        {tab === "hoje" && <HomeScreen />}
         {tab === "treinos" && <TreinosScreen />}
         {tab === "agenda" && <AgendaScreen />}
         {tab === "evolucao" && <EvolucaoScreen />}

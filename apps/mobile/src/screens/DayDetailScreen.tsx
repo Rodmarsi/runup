@@ -10,11 +10,11 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { color, border } from "@runup/ui/tokens";
 import type { Block, BlockItem } from "@runup/types";
-import type { WorkoutDayDetailDto, WorkoutDayDto } from "@runup/api-client";
+import type { WorkoutDayDetailDto, WorkoutDayDto, SplitDto } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { km, pace, localIsoDate } from "../format.js";
+import { km, pace, duration, localIsoDate } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 
 const ROLE_LABEL: Record<Block["role"], string> = {
@@ -63,6 +63,15 @@ function addDays(iso: string, delta: number): string {
 function formatDateLabel(iso: string): string {
   const d = parseLocalDate(iso);
   return `${WEEKDAY_NAMES[d.getDay()]}, ${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}`;
+}
+
+/** Largura da barra do split (30%-100%): mais lento = barra mais cheia. */
+function splitBarWidth(paceSecPerKm: number, splits: SplitDto[]): number {
+  const paces = splits.map((s) => s.paceSecPerKm);
+  const min = Math.min(...paces);
+  const max = Math.max(...paces);
+  if (max === min) return 100;
+  return 30 + (70 * (paceSecPerKm - min)) / (max - min);
 }
 
 export function DayDetailScreen({ date }: { date: string }) {
@@ -147,6 +156,68 @@ export function DayDetailScreen({ date }: { date: string }) {
 
         {matching && detail ? (
           <>
+            {detail.logs.length > 0 && (
+              <View style={styles.blockGroup}>
+                <Text style={[text.overline, styles.blockLabel]}>RESULTADO</Text>
+                {detail.logs.map((log) => (
+                  <View key={log.id} style={[styles.card, styles.resultCard]}>
+                    <View style={styles.resultRow}>
+                      <View style={styles.resultCol}>
+                        <Text style={text.muted}>Distância</Text>
+                        <Text style={styles.resultValue}>
+                          {log.distanceMeters ? `${km(log.distanceMeters)} km` : "—"}
+                        </Text>
+                      </View>
+                      <View style={styles.resultCol}>
+                        <Text style={text.muted}>Tempo</Text>
+                        <Text style={styles.resultValue}>
+                          {log.durationSeconds ? duration(log.durationSeconds) : "—"}
+                        </Text>
+                      </View>
+                      <View style={styles.resultCol}>
+                        <Text style={text.muted}>Ritmo médio</Text>
+                        <Text style={styles.resultValue}>{pace(log.avgPaceSecPerKm)}/km</Text>
+                      </View>
+                    </View>
+
+                    {log.splits && log.splits.length > 0 && (
+                      <View style={styles.splitsTable}>
+                        <Text style={[text.overline, styles.splitsLabel]}>SPLITS</Text>
+                        {log.splits.map((s) => (
+                          <View key={s.km} style={styles.splitRow}>
+                            <Text style={styles.splitKm}>{s.km} km</Text>
+                            <View style={styles.splitBarTrack}>
+                              <View
+                                style={[
+                                  styles.splitBar,
+                                  { width: `${splitBarWidth(s.paceSecPerKm, log.splits!)}%` },
+                                ]}
+                              />
+                            </View>
+                            <Text style={styles.splitPace}>{pace(s.paceSecPerKm)}/km</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {(log.perceivedEffort || log.notes || (log.pain && log.pain !== "Nenhuma")) && (
+                      <View style={styles.feedbackBlock}>
+                        {log.perceivedEffort && (
+                          <Text style={text.secondary}>Esforço percebido: {log.perceivedEffort}/10</Text>
+                        )}
+                        {log.pain && log.pain !== "Nenhuma" && (
+                          <Text style={[text.secondary, { color: color.danger }]}>
+                            Dor relatada: {log.pain}
+                          </Text>
+                        )}
+                        {log.notes && <Text style={text.secondary}>"{log.notes}"</Text>}
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
             {blocks.map((block, bi) => (
               <View key={bi} style={styles.blockGroup}>
                 <Text style={[text.overline, styles.blockLabel]}>
@@ -235,6 +306,24 @@ const styles = StyleSheet.create({
   },
   mainCard: { borderColor: "rgba(255,85,0,0.35)" },
   item: { fontFamily: font.regular, fontSize: 13, color: color.textPrimary, marginVertical: 2 },
+  resultCard: { marginBottom: 8, gap: 4 },
+  resultRow: { flexDirection: "row", justifyContent: "space-between" },
+  resultCol: { flex: 1 },
+  resultValue: { fontFamily: font.bold, fontSize: 16, color: color.textPrimary, marginTop: 2 },
+  splitsTable: { marginTop: 14 },
+  splitsLabel: { marginBottom: 8 },
+  splitRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
+  splitKm: { fontFamily: font.medium, fontSize: 11, color: color.textMuted, width: 34 },
+  splitBarTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 99,
+    backgroundColor: color.surface3,
+    overflow: "hidden",
+  },
+  splitBar: { height: "100%", backgroundColor: color.orange500, borderRadius: 99 },
+  splitPace: { fontFamily: font.medium, fontSize: 11, color: color.textSecondary, width: 56, textAlign: "right" },
+  feedbackBlock: { marginTop: 12, gap: 4 },
   comment: {
     backgroundColor: color.surface3,
     borderRadius: 10,

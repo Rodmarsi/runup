@@ -39,7 +39,7 @@ function summarize(day: WorkoutDayDto): { title: string; sub: string } {
   return { title: "Treino do dia", sub: "Força / mobilidade" };
 }
 
-export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
+export function HomeScreen() {
   const { user } = useAuth();
   const { navigate } = useNav();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
@@ -48,6 +48,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [error, setError] = useState(false);
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(localIsoDate());
 
   function load() {
     setLoading(true);
@@ -87,6 +88,11 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   const todayDay = days.find((d) => d.date.slice(0, 10) === today);
   const byDate = new Map(days.map((d) => [d.date.slice(0, 10), d]));
   const weekDates = currentWeek(weekOffset);
+  const selectedDay = byDate.get(selectedDate);
+  const selectedDateLabel =
+    selectedDate === today
+      ? "HOJE"
+      : `${WEEKDAYS[new Date(`${selectedDate}T12:00:00Z`).getUTCDay()]} · ${selectedDate.slice(8, 10)}/${selectedDate.slice(5, 7)}`;
 
   return (
     <View style={styles.container}>
@@ -94,7 +100,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
         {/* Cabeçalho */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Pressable onPress={onOpenProfile} style={styles.avatar}>
+            <Pressable onPress={() => navigate({ name: "profile" })} style={styles.avatar}>
               <Text style={styles.avatarText}>
                 {user?.name.charAt(0).toUpperCase() ?? "?"}
               </Text>
@@ -130,12 +136,17 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
           {weekDates.map((iso) => {
             const d = byDate.get(iso);
             const isToday = iso === today;
+            const isSelected = iso === selectedDate;
             const dow = WEEKDAYS[new Date(`${iso}T12:00:00Z`).getUTCDay()];
             return (
               <Pressable
                 key={iso}
-                onPress={() => navigate({ name: "day", date: iso })}
-                style={[styles.dayCell, isToday && styles.dayCellToday]}
+                onPress={() => setSelectedDate(iso)}
+                style={[
+                  styles.dayCell,
+                  isToday && styles.dayCellToday,
+                  !isToday && isSelected && styles.dayCellSelected,
+                ]}
               >
                 <Text style={[styles.dayDow, isToday && styles.dayTextToday]}>{dow}</Text>
                 <Text style={[styles.dayNum, isToday && styles.dayTextToday]}>
@@ -147,8 +158,8 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
           })}
         </View>
 
-        {/* Treino de hoje (farol) */}
-        {todayDay ? (
+        {/* Dia selecionado — card inline (farol só quando é hoje) */}
+        {selectedDate === today && todayDay ? (
           <Pressable onPress={() => navigate({ name: "day", date: today })}>
             <LinearGradient
               colors={gradients.brasaRadiante}
@@ -161,7 +172,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
               <Text style={styles.heroSub}>{summarize(todayDay).sub}</Text>
             </LinearGradient>
           </Pressable>
-        ) : days.length === 0 && stats?.lastWorkoutDate && localIsoDate(new Date(stats.lastWorkoutDate)) === today ? (
+        ) : selectedDate === today && days.length === 0 && stats?.lastWorkoutDate && localIsoDate(new Date(stats.lastWorkoutDate)) === today ? (
           <View style={[styles.card, styles.restCard]}>
             <Text style={text.secondary}>✓ Treino de hoje já registrado. Bom trabalho!</Text>
             <Pressable
@@ -171,7 +182,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
               <Text style={styles.logWorkoutText}>Registrar outro treino</Text>
             </Pressable>
           </View>
-        ) : days.length === 0 ? (
+        ) : selectedDate === today && days.length === 0 ? (
           <View style={[styles.card, styles.restCard]}>
             <Text style={text.secondary}>
               Você ainda não tem um treinador vinculado, então não há plano por
@@ -185,9 +196,23 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
               <Text style={styles.logWorkoutText}>Registrar treino avulso</Text>
             </Pressable>
           </View>
+        ) : selectedDay ? (
+          <Pressable
+            onPress={() => navigate({ name: "day", date: selectedDate })}
+            style={[styles.card, styles.restCard, styles.selectedCard]}
+          >
+            <Text style={[text.overline, styles.selectedOverline]}>
+              {selectedDateLabel}
+            </Text>
+            <Text style={styles.selectedTitle}>{summarize(selectedDay).title}</Text>
+            <Text style={text.muted}>{summarize(selectedDay).sub}</Text>
+          </Pressable>
         ) : (
           <View style={[styles.card, styles.restCard]}>
-            <Text style={text.secondary}>Sem treino hoje — dia de descanso.</Text>
+            <Text style={[text.overline, styles.selectedOverline]}>
+              {selectedDateLabel}
+            </Text>
+            <Text style={text.secondary}>Sem treino neste dia.</Text>
           </View>
         )}
 
@@ -277,6 +302,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface2,
   },
   dayCellToday: { backgroundColor: color.orange500 },
+  dayCellSelected: { borderWidth: 1, borderColor: color.orange500 },
   dayDow: { fontFamily: font.regular, fontSize: 9, color: color.textFaint },
   dayNum: { fontFamily: font.regular, fontSize: 12, color: color.textSecondary, marginVertical: 1 },
   dayTextToday: { color: color.ink, fontFamily: font.semibold },
@@ -299,6 +325,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   restCard: { marginBottom: 12 },
+  selectedCard: { borderColor: color.orange600 },
+  selectedOverline: { color: color.orange400, marginBottom: 6 },
+  selectedTitle: { fontFamily: font.bold, fontSize: 15, color: color.textPrimary, marginBottom: 2 },
   logWorkoutBtn: {
     marginTop: 12,
     alignSelf: "flex-start",
