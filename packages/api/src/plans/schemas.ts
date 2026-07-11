@@ -79,6 +79,17 @@ export const commentSchema = z.object({
   text: z.string().min(1).max(2000),
 });
 
+/** Treinador move a data ou cancela um dia já criado. */
+export const updateDaySchema = z.object({
+  date: isoDate.optional(),
+  status: z.enum(["pending", "done", "partial", "skipped"]).optional(),
+});
+
+/** Treinador duplica um dia (mesmos blocos) pra outra data. */
+export const duplicateDaySchema = z.object({
+  date: isoDate,
+});
+
 export const createGoalSchema = z.object({
   studentId: z.string(),
   planId: z.string().optional(),
@@ -88,6 +99,8 @@ export const createGoalSchema = z.object({
   targetTimeSeconds: z.number().int().positive().optional(),
 });
 
+export type UpdateDayInput = z.infer<typeof updateDaySchema>;
+export type DuplicateDayInput = z.infer<typeof duplicateDaySchema>;
 export type CreatePlanInput = z.infer<typeof createPlanSchema>;
 export type CreateSelfPlanInput = z.infer<typeof createSelfPlanSchema>;
 export type LogWorkoutInput = z.infer<typeof logWorkoutSchema>;

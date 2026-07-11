@@ -39,20 +39,60 @@ export default function StudentDetailPage() {
   const [data, setData] = useState<CoachStudentOverview | null>(null);
   const [linkId, setLinkId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionRow, setActionRow] = useState<{ dayId: string; mode: "move" | "duplicate" } | null>(null);
+  const [actionDate, setActionDate] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function load() {
+    return api.coachStudentOverview(studentId).then(setData);
+  }
 
   useEffect(() => {
     if (!hasToken()) {
       router.replace("/login");
       return;
     }
-    Promise.all([api.coachStudentOverview(studentId), api.conversations()])
-      .then(([overview, convs]) => {
-        setData(overview);
+    Promise.all([load(), api.conversations()])
+      .then(([, convs]) => {
         setLinkId(convs.find((c) => c.with.id === studentId)?.linkId ?? null);
       })
       .catch(() => router.replace("/"))
       .finally(() => setLoading(false));
   }, [router, studentId]);
+
+  function openAction(dayId: string, mode: "move" | "duplicate") {
+    setActionRow({ dayId, mode });
+    setActionDate("");
+  }
+
+  async function confirmAction() {
+    if (!actionRow || !actionDate) return;
+    setBusy(true);
+    try {
+      if (actionRow.mode === "move") {
+        await api.updateWorkoutDay(actionRow.dayId, { date: actionDate });
+      } else {
+        await api.duplicateWorkoutDay(actionRow.dayId, actionDate);
+      }
+      await load();
+      setActionRow(null);
+    } catch {
+      alert("Não foi possível concluir a ação.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelDay(dayId: string) {
+    if (!confirm("Cancelar este treino?")) return;
+    setBusy(true);
+    try {
+      await api.updateWorkoutDay(dayId, { status: "skipped" });
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (loading) return <div style={styles.loading}>Carregando…</div>;
   if (!data) return null;
@@ -111,12 +151,56 @@ export default function StudentDetailPage() {
         <p style={styles.muted}>Nenhum treino futuro atribuído.</p>
       ) : (
         upcoming.map((d) => (
-          <div key={d.id} style={styles.dayRow}>
-            <span style={{ ...styles.dot, background: STATUS_COLOR[d.status] }} />
-            <div style={{ flex: 1 }}>
-              <div style={styles.dayTitle}>{dayTitle(d)}</div>
-              <div style={styles.muted}>Semana {d.week} · {d.date.slice(0, 10)}</div>
+          <div key={d.id} style={styles.dayRowWrap}>
+            <div style={styles.dayRow}>
+              <span style={{ ...styles.dot, background: STATUS_COLOR[d.status] }} />
+              <div style={{ flex: 1 }}>
+                <div style={styles.dayTitle}>{dayTitle(d)}</div>
+                <div style={styles.muted}>Semana {d.week} · {d.date.slice(0, 10)}</div>
+              </div>
+              <div style={styles.dayActions}>
+                <button
+                  onClick={() => openAction(d.id, "duplicate")}
+                  disabled={busy}
+                  style={styles.actionBtn}
+                >
+                  Duplicar
+                </button>
+                <button
+                  onClick={() => openAction(d.id, "move")}
+                  disabled={busy}
+                  style={styles.actionBtn}
+                >
+                  Mover
+                </button>
+                <button
+                  onClick={() => cancelDay(d.id)}
+                  disabled={busy}
+                  style={{ ...styles.actionBtn, color: color.danger }}
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
+            {actionRow?.dayId === d.id && (
+              <div style={styles.actionForm}>
+                <span style={styles.muted}>
+                  {actionRow.mode === "move" ? "Nova data:" : "Duplicar para:"}
+                </span>
+                <input
+                  type="date"
+                  value={actionDate}
+                  onChange={(e) => setActionDate(e.target.value)}
+                  style={styles.dateInput}
+                />
+                <button onClick={confirmAction} disabled={busy || !actionDate} style={styles.confirmBtn}>
+                  Confirmar
+                </button>
+                <button onClick={() => setActionRow(null)} style={styles.cancelLink}>
+                  cancelar
+                </button>
+              </div>
+            )}
           </div>
         ))
       )}
@@ -162,10 +246,29 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardTitle: { fontSize: 13, fontWeight: 600 },
   muted: { fontSize: 11, color: color.textMuted },
+  dayRowWrap: { borderBottom: `1px solid ${border.hairline}` },
   dayRow: {
     display: "flex", alignItems: "center", gap: 12, padding: "10px 0",
-    borderBottom: `1px solid ${border.hairline}`,
   },
   dot: { width: 8, height: 8, borderRadius: 99 },
   dayTitle: { fontSize: 13, fontWeight: 600 },
+  dayActions: { display: "flex", gap: 4 },
+  actionBtn: {
+    background: "none", border: "none", color: color.textMuted, fontSize: 11,
+    cursor: "pointer", padding: "4px 6px",
+  },
+  actionForm: {
+    display: "flex", alignItems: "center", gap: 8, paddingBottom: 12,
+  },
+  dateInput: {
+    background: color.surface2, border: `1px solid ${border.hairline}`, borderRadius: 8,
+    color: color.textPrimary, fontSize: 12, padding: "6px 8px",
+  },
+  confirmBtn: {
+    border: "none", borderRadius: 99, background: color.orange500, color: color.ink,
+    fontWeight: 600, fontSize: 11, padding: "6px 12px", cursor: "pointer",
+  },
+  cancelLink: {
+    background: "none", border: "none", color: color.textFaint, fontSize: 11, cursor: "pointer",
+  },
 };

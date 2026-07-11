@@ -235,7 +235,9 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
             <Text style={[text.overline, styles.selectedOverline]}>
               {selectedDateLabel}
             </Text>
-            <Text style={text.secondary}>Sem treino neste dia.</Text>
+            <Text style={text.secondary}>
+              {selectedDate === today ? restMessage(stats?.streakDays ?? 0) : "Sem treino neste dia."}
+            </Text>
           </View>
         )}
 
@@ -283,6 +285,23 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
       </ScrollView>
     </View>
   );
+}
+
+const REST_MESSAGES = [
+  "Hoje é dia de descanso. A recuperação também faz parte da evolução.",
+  "Sem treino hoje — seu corpo agradece a pausa.",
+  "Dia livre. Aproveite pra alongar e dormir bem.",
+];
+
+/** Mensagem do dia de descanso — varia conforme a sequência atual do aluno. */
+function restMessage(streakDays: number): string {
+  if (streakDays >= 7) {
+    return `Você está numa sequência de ${streakDays} dias — hoje é pra descansar e voltar ainda mais forte.`;
+  }
+  if (streakDays >= 3) {
+    return `${streakDays} dias seguidos treinando. Aproveite o descanso de hoje.`;
+  }
+  return REST_MESSAGES[new Date().getDate() % REST_MESSAGES.length]!;
 }
 
 function insightStyle(severity: Insight["severity"]) {

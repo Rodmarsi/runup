@@ -136,6 +136,82 @@ describe("criação e atribuição de plano", () => {
   });
 });
 
+describe("treinador: mover, cancelar e duplicar um dia", () => {
+  it("move a data de um dia", async () => {
+    const { coach, student } = await linkedPair("mv1");
+    await createPlan(coach.token, student.id);
+    const dayId = (
+      await app.inject({ method: "GET", url: "/me/calendar", headers: auth(student.token) })
+    ).json()[0].id;
+
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/workout-days/${dayId}`,
+      headers: auth(coach.token),
+      payload: { date: "2026-07-08" },
+    });
+    expect(res.json().date.slice(0, 10)).toBe("2026-07-08");
+  });
+
+  it("cancela um dia (status skipped)", async () => {
+    const { coach, student } = await linkedPair("mv2");
+    await createPlan(coach.token, student.id);
+    const dayId = (
+      await app.inject({ method: "GET", url: "/me/calendar", headers: auth(student.token) })
+    ).json()[0].id;
+
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/workout-days/${dayId}`,
+      headers: auth(coach.token),
+      payload: { status: "skipped" },
+    });
+    expect(res.json().status).toBe("skipped");
+  });
+
+  it("duplica um dia pra outra data, mantendo os blocos", async () => {
+    const { coach, student } = await linkedPair("mv3");
+    await createPlan(coach.token, student.id);
+    const original = (
+      await app.inject({ method: "GET", url: "/me/calendar", headers: auth(student.token) })
+    ).json()[0];
+
+    const res = await app.inject({
+      method: "POST",
+      url: `/workout-days/${original.id}/duplicate`,
+      headers: auth(coach.token),
+      payload: { date: "2026-07-14" },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().date.slice(0, 10)).toBe("2026-07-14");
+    expect(res.json().blocks).toEqual(original.blocks);
+
+    const cal = await app.inject({
+      method: "GET",
+      url: "/me/calendar",
+      headers: auth(student.token),
+    });
+    expect(cal.json()).toHaveLength(3);
+  });
+
+  it("outro treinador não move dia alheio (404)", async () => {
+    const { coach, student } = await linkedPair("mv4");
+    await createPlan(coach.token, student.id);
+    const dayId = (
+      await app.inject({ method: "GET", url: "/me/calendar", headers: auth(student.token) })
+    ).json()[0].id;
+    const intruso = await register("coach", "intruso-mv@runup.app");
+
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/workout-days/${dayId}`,
+      headers: auth(intruso.token),
+      payload: { date: "2026-07-09" },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});
+
 describe("check-in com feedback", () => {
   it("aluno registra execução com RPE e notas; status do dia atualiza", async () => {
     const { coach, student } = await linkedPair("l1");

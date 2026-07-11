@@ -31,14 +31,17 @@ import { CreateWorkoutScreen } from "./src/screens/CreateWorkoutScreen.js";
 import { AiPlanWizardScreen } from "./src/screens/AiPlanWizardScreen.js";
 import { RacesScreen } from "./src/screens/RacesScreen.js";
 import { RaceDetailScreen } from "./src/screens/RaceDetailScreen.js";
+import { LiveWorkoutScreen } from "./src/screens/LiveWorkoutScreen.js";
 
 function Router() {
   const { route } = useNav();
   switch (route.name) {
     case "day":
       return <DayDetailScreen date={route.date} />;
+    case "liveWorkout":
+      return <LiveWorkoutScreen dayId={route.dayId} title={route.title} />;
     case "checkin":
-      return <CheckinScreen dayId={route.dayId} />;
+      return <CheckinScreen dayId={route.dayId} initialDurationSeconds={route.initialDurationSeconds} />;
     case "logWorkout":
       return <LogWorkoutScreen />;
     case "goal":

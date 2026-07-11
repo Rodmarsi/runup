@@ -36,6 +36,7 @@ import {
   type UpdateRaceInput,
   type GamificationSnapshot,
   type Insight,
+  type UpdateDayInput,
 } from "./types.js";
 
 export * from "./types.js";
@@ -270,6 +271,14 @@ export class RunUpClient {
 
   createPlan(input: CreatePlanInput): Promise<{ id: string }> {
     return this.request<{ id: string }>("POST", "/plans", input);
+  }
+
+  updateWorkoutDay(dayId: string, input: UpdateDayInput): Promise<WorkoutDayDto> {
+    return this.request<WorkoutDayDto>("PATCH", `/workout-days/${dayId}`, input);
+  }
+
+  duplicateWorkoutDay(dayId: string, date: string): Promise<WorkoutDayDto> {
+    return this.request<WorkoutDayDto>("POST", `/workout-days/${dayId}/duplicate`, { date });
   }
 
   importExcel(studentId: string, contentBase64: string): Promise<ImportPreview> {

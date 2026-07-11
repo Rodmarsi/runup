@@ -124,6 +124,8 @@ export function DayDetailScreen({ date }: { date: string }) {
         (a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role),
       )
     : [];
+  const mainItem = blocks.find((b) => b.role === "main")?.items[0];
+  const liveTitle = mainItem ? describeItem(mainItem) : "Treino do dia";
 
   return (
     <View style={styles.container}>
@@ -203,7 +205,7 @@ export function DayDetailScreen({ date }: { date: string }) {
       {matching && (
         <View style={styles.footer}>
           <Pressable
-            onPress={() => navigate({ name: "checkin", dayId: matching.id })}
+            onPress={() => navigate({ name: "liveWorkout", dayId: matching.id, title: liveTitle })}
             style={styles.cta}
           >
             <LinearGradient
@@ -212,7 +214,7 @@ export function DayDetailScreen({ date }: { date: string }) {
               end={{ x: 1, y: 1 }}
               style={styles.ctaGradient}
             >
-              <Text style={styles.ctaText}>Concluir treino</Text>
+              <Text style={styles.ctaText}>Iniciar treino</Text>
             </LinearGradient>
           </Pressable>
         </View>

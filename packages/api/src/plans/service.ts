@@ -8,6 +8,8 @@ import type {
   LogWorkoutInput,
   LogStandaloneWorkoutInput,
   ListWorkoutLogsQuery,
+  UpdateDayInput,
+  DuplicateDayInput,
 } from "./schemas.js";
 
 export class PlanService {
@@ -25,6 +27,45 @@ export class PlanService {
       where: { coachId_studentId: { coachId, studentId } },
     });
     if (!link || link.status !== "active") throw errors.notLinked();
+  }
+
+  /** Garante que o dia pertence a um plano do treinador, com vínculo ativo com o(s) aluno(s). */
+  private async assertCoachOwnsDay(coachId: string, dayId: string) {
+    const day = await this.db.workoutDay.findUnique({
+      where: { id: dayId },
+      include: { plan: { include: { assignments: true } } },
+    });
+    if (!day) throw errors.dayNotFound();
+    if (day.plan.ownerId !== coachId) throw errors.dayNotFound();
+    for (const a of day.plan.assignments) {
+      await this.assertActiveLink(coachId, a.studentId);
+    }
+    return day;
+  }
+
+  /** Move a data ou muda o status (ex.: cancelar → "skipped") de um dia já criado. */
+  async updateDay(coachId: string, dayId: string, input: UpdateDayInput) {
+    await this.assertCoachOwnsDay(coachId, dayId);
+    return this.db.workoutDay.update({
+      where: { id: dayId },
+      data: {
+        date: input.date ? new Date(input.date) : undefined,
+        status: input.status,
+      },
+    });
+  }
+
+  /** Duplica um dia (mesmos blocos) pra outra data, no mesmo plano. */
+  async duplicateDay(coachId: string, dayId: string, input: DuplicateDayInput) {
+    const day = await this.assertCoachOwnsDay(coachId, dayId);
+    return this.db.workoutDay.create({
+      data: {
+        planId: day.planId,
+        week: day.week,
+        date: new Date(input.date),
+        blocks: day.blocks as object,
+      },
+    });
   }
 
   /**

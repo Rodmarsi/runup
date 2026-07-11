@@ -10,6 +10,8 @@ import {
   logWorkoutSchema,
   logStandaloneWorkoutSchema,
   listWorkoutLogsQuerySchema,
+  updateDaySchema,
+  duplicateDaySchema,
   commentSchema,
   createGoalSchema,
 } from "./schemas.js";
@@ -72,6 +74,23 @@ export function planRoutes(db: PrismaClient) {
       const parsed = listWorkoutLogsQuerySchema.safeParse(request.query);
       if (!parsed.success) throw errors.validation(parsed.error.flatten());
       return plans.listWorkoutLogs(request.authUser!.id, parsed.data);
+    });
+
+    // Treinador move a data ou cancela ("skipped") um dia já criado.
+    app.patch("/workout-days/:id", asCoach, async (request) => {
+      const { id } = request.params as { id: string };
+      const parsed = updateDaySchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      return plans.updateDay(request.authUser!.id, id, parsed.data);
+    });
+
+    // Treinador duplica um dia (mesmos blocos) pra outra data.
+    app.post("/workout-days/:id/duplicate", asCoach, async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const parsed = duplicateDaySchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      const day = await plans.duplicateDay(request.authUser!.id, id, parsed.data);
+      reply.status(201).send(day);
     });
 
     // Comentário num dia (treinador ou aluno do vínculo).

@@ -335,6 +335,12 @@ export interface CreateRaceInput {
   registrationUrl?: string;
 }
 
+/** Treinador move a data ou muda o status (cancelar → "skipped") de um dia. */
+export interface UpdateDayInput {
+  date?: string;
+  status?: WorkoutDayStatus;
+}
+
 export interface MissionDto {
   code: string;
   period: "daily" | "weekly";
