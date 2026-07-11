@@ -7,6 +7,7 @@ import {
   refreshTokenExpiry,
   signGoogleState,
   verifyGoogleState,
+  type GoogleAuthPlatform,
 } from "../tokens.js";
 import type { GoogleClient } from "./client.js";
 
@@ -14,6 +15,7 @@ export interface GoogleLoginResult {
   accessToken: string;
   refreshToken: string;
   created: boolean;
+  platform: GoogleAuthPlatform;
 }
 
 export class GoogleAuthService {
@@ -22,8 +24,8 @@ export class GoogleAuthService {
     private readonly client: GoogleClient,
   ) {}
 
-  /** URL de autorização do Google, com o papel escolhido no `state`. */
-  buildAuthorizeUrl(role: UserRole): string {
+  /** URL de autorização do Google, com o papel e a plataforma escolhidos no `state`. */
+  buildAuthorizeUrl(role: UserRole, platform: GoogleAuthPlatform): string {
     const params = new URLSearchParams({
       client_id: process.env.GOOGLE_CLIENT_ID ?? "",
       response_type: "code",
@@ -31,7 +33,7 @@ export class GoogleAuthService {
       scope: "openid email profile",
       access_type: "online",
       prompt: "select_account",
-      state: signGoogleState(role),
+      state: signGoogleState(role, platform),
     });
     return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   }
@@ -41,7 +43,7 @@ export class GoogleAuthService {
    * cria a conta (com o papel do state) se o email ainda não existir.
    */
   async handleCallback(code: string, state: string): Promise<GoogleLoginResult> {
-    const role = verifyGoogleState(state);
+    const { role, platform } = verifyGoogleState(state);
     const profile = await this.client.exchangeCode(code);
 
     let user = await this.db.user.findUnique({
@@ -71,6 +73,6 @@ export class GoogleAuthService {
       },
     });
 
-    return { accessToken, refreshToken: raw, created };
+    return { accessToken, refreshToken: raw, created, platform };
   }
 }

@@ -15,4 +15,6 @@ export const config = {
     process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:3333/auth/google/callback",
   /** Para onde o callback devolve o usuário (web) com os tokens. */
   webUrl: process.env.WEB_URL ?? "http://localhost:3000",
+  /** Deep link scheme do app mobile (Expo `scheme` em app.json). */
+  mobileScheme: process.env.MOBILE_SCHEME ?? "runup://",
 } as const;

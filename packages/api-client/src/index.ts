@@ -64,10 +64,13 @@ export class RunUpClient {
     return this.options.tokens.set(token);
   }
 
-  googleAuthorizeUrl(role: "student" | "coach"): Promise<{ url: string }> {
+  googleAuthorizeUrl(
+    role: "student" | "coach",
+    platform: "web" | "mobile" = "web",
+  ): Promise<{ url: string }> {
     return this.request<{ url: string }>(
       "GET",
-      `/auth/google/authorize?role=${role}`,
+      `/auth/google/authorize?role=${role}&platform=${platform}`,
     );
   }
 

@@ -34,7 +34,7 @@ describe("login com Google", () => {
   });
 
   it("callback cria a conta e redireciona ao web com tokens", async () => {
-    const state = signGoogleState("coach");
+    const state = signGoogleState("coach", "web");
     fake.profile = { email: "coach@gmail.com", name: "Treinador Google" };
     const res = await app.inject({
       method: "GET",
@@ -52,7 +52,7 @@ describe("login com Google", () => {
   });
 
   it("callback loga usuário existente (não duplica)", async () => {
-    const state = signGoogleState("student");
+    const state = signGoogleState("student", "web");
     fake.profile = { email: "existe@gmail.com", name: "Fulano" };
     await app.inject({
       method: "GET",
@@ -75,5 +75,27 @@ describe("login com Google", () => {
     });
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toContain("/login?error=google");
+  });
+
+  it("authorize com platform=mobile embute a plataforma no state", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: "/auth/google/authorize?role=student&platform=mobile",
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().url).toContain("accounts.google.com");
+  });
+
+  it("callback do mobile redireciona ao deep link do app, não à web", async () => {
+    const state = signGoogleState("student", "mobile");
+    fake.profile = { email: "mobile@gmail.com", name: "Fulano Mobile" };
+    const res = await app.inject({
+      method: "GET",
+      url: `/auth/google/callback?code=abc&state=${state}`,
+    });
+    expect(res.statusCode).toBe(302);
+    const location = res.headers.location as string;
+    expect(location).toContain("runup://auth/callback#");
+    expect(location).toContain("access_token=");
   });
 });

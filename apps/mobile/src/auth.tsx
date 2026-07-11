@@ -6,6 +6,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import type { AuthUser } from "@runup/api-client";
 import { api } from "./api.js";
 
@@ -13,6 +15,8 @@ interface AuthState {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -38,6 +42,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login: async (email, password) => {
         const result = await api.login(email, password);
         setUser(result.user);
+      },
+      register: async (name, email, password) => {
+        const result = await api.register({ name, email, password, role: "student" });
+        setUser(result.user);
+      },
+      loginWithGoogle: async () => {
+        const redirectUrl = Linking.createURL("auth/callback");
+        const { url } = await api.googleAuthorizeUrl("student", "mobile");
+        const result = await WebBrowser.openAuthSessionAsync(url, redirectUrl);
+        if (result.type !== "success") return;
+        // O callback devolve os tokens no fragmento (#access_token=...&refresh_token=...).
+        const fragment = result.url.split("#")[1] ?? "";
+        const token = fragment
+          .split("&")
+          .map((pair) => pair.split("="))
+          .find(([key]) => key === "access_token")?.[1];
+        if (!token) throw new Error("Login com Google não retornou um token");
+        await api.setAccessToken(decodeURIComponent(token));
+        setUser(await api.me());
       },
       logout: async () => {
         await api.logout();

@@ -9,6 +9,7 @@ import { registerSchema, loginSchema, refreshSchema } from "./schemas.js";
 import { GoogleAuthService } from "./google/service.js";
 import { HttpGoogleClient } from "./google/http-client.js";
 import type { GoogleClient } from "./google/client.js";
+import { verifyGoogleState } from "./tokens.js";
 
 export function authRoutes(db: PrismaClient, googleClient?: GoogleClient) {
   const service = new AuthService(db);
@@ -41,22 +42,38 @@ export function authRoutes(db: PrismaClient, googleClient?: GoogleClient) {
       reply.status(204).send();
     });
 
-    // Login com Google: o app pede a URL (com o papel) e abre no navegador.
+    // Login com Google: o app (web ou mobile) pede a URL (com o papel) e abre
+    // no navegador. `platform` decide para onde o callback redireciona.
     app.get("/auth/google/authorize", async (request) => {
-      const { role } = request.query as { role?: string };
+      const { role, platform } = request.query as { role?: string; platform?: string };
       const chosen: UserRole = role === "coach" ? "coach" : "student";
-      return { url: google().buildAuthorizeUrl(chosen) };
+      const chosenPlatform = platform === "mobile" ? "mobile" : "web";
+      return { url: google().buildAuthorizeUrl(chosen, chosenPlatform) };
     });
 
-    // Callback do Google → cria/loga o usuário e devolve os tokens ao web.
+    // Callback do Google → cria/loga o usuário e devolve os tokens ao
+    // originador (web, via redirect normal; mobile, via deep link do app).
     app.get("/auth/google/callback", async (request, reply) => {
       const { code, state, error } = request.query as {
         code?: string;
         state?: string;
         error?: string;
       };
+      // Sem `state` válido não dá pra saber a plataforma — manda pra web por padrão.
+      const platformFromState = (): "web" | "mobile" => {
+        try {
+          return state ? verifyGoogleState(state).platform : "web";
+        } catch {
+          return "web";
+        }
+      };
+      // `mobileScheme` já termina em "://" (ex.: "runup://"), `webUrl` não
+      // termina em "/" — cada um precisa de uma junção diferente.
+      const redirectUrl = (platform: "web" | "mobile", path: string) =>
+        platform === "mobile" ? `${config.mobileScheme}${path}` : `${config.webUrl}/${path}`;
+
       if (error || !code || !state) {
-        return reply.redirect(`${config.webUrl}/login?error=google`);
+        return reply.redirect(redirectUrl(platformFromState(), "login?error=google"));
       }
       try {
         const result = await google().handleCallback(code, state);
@@ -64,9 +81,11 @@ export function authRoutes(db: PrismaClient, googleClient?: GoogleClient) {
           access_token: result.accessToken,
           refresh_token: result.refreshToken,
         });
-        return reply.redirect(`${config.webUrl}/auth/callback#${frag.toString()}`);
+        return reply.redirect(
+          redirectUrl(result.platform, `auth/callback#${frag.toString()}`),
+        );
       } catch {
-        return reply.redirect(`${config.webUrl}/login?error=google`);
+        return reply.redirect(redirectUrl(platformFromState(), "login?error=google"));
       }
     });
 

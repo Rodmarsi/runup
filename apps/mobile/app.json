@@ -2,6 +2,7 @@
   "expo": {
     "name": "RunUp",
     "slug": "runup",
+    "scheme": "runup",
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
