@@ -6,9 +6,10 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  Linking,
 } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { color, border } from "@runup/ui/tokens";
+import { ApiError } from "@runup/api-client";
 import type {
   Stats,
   PersonalRecordDto,
@@ -40,6 +41,8 @@ export function EvolucaoScreen() {
   const [conversations, setConversations] = useState<ConversationDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [connectingStrava, setConnectingStrava] = useState(false);
+  const [stravaError, setStravaError] = useState<string | null>(null);
 
   async function load() {
     const [s, p, g, st, conv] = await Promise.all([
@@ -71,8 +74,21 @@ export function EvolucaoScreen() {
   }
 
   async function connectStrava() {
-    const { url } = await api.stravaAuthorizeUrl();
-    await Linking.openURL(url);
+    setConnectingStrava(true);
+    setStravaError(null);
+    try {
+      const { url } = await api.stravaAuthorizeUrl();
+      await WebBrowser.openBrowserAsync(url);
+      // O aluno aprova no navegador e volta manualmente ao app (a página do
+      // Strava já orienta isso); atualizamos o status ao voltar.
+      await load();
+    } catch (e) {
+      setStravaError(
+        e instanceof ApiError ? e.message : "Não foi possível abrir o Strava",
+      );
+    } finally {
+      setConnectingStrava(false);
+    }
   }
 
   if (loading) {
@@ -172,11 +188,18 @@ export function EvolucaoScreen() {
             <Text style={styles.syncText}>{syncing ? "..." : "Sincronizar"}</Text>
           </Pressable>
         ) : (
-          <Pressable onPress={connectStrava} style={styles.syncBtn}>
-            <Text style={styles.syncText}>Conectar</Text>
+          <Pressable
+            onPress={connectStrava}
+            disabled={connectingStrava}
+            style={styles.syncBtn}
+          >
+            <Text style={styles.syncText}>
+              {connectingStrava ? "..." : "Conectar"}
+            </Text>
           </Pressable>
         )}
       </View>
+      {stravaError && <Text style={styles.error}>{stravaError}</Text>}
 
       <Pressable onPress={logout} style={styles.logout}>
         <Text style={styles.logoutText}>Sair</Text>
@@ -258,4 +281,5 @@ const styles = StyleSheet.create({
     borderColor: border.strong,
   },
   logoutText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
+  error: { fontFamily: font.regular, fontSize: 12, color: color.danger, marginTop: 8 },
 });

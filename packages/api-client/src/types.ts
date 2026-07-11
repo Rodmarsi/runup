@@ -82,6 +82,15 @@ export interface LogWorkoutInput {
   notes?: string;
 }
 
+/** Treino avulso, sem estar ligado a um dia de um plano. */
+export interface LogStandaloneWorkoutInput {
+  distanceMeters?: number;
+  durationSeconds?: number;
+  perceivedEffort?: number;
+  pain?: string;
+  notes?: string;
+}
+
 export interface GoalDto {
   id: string;
   targetRace: RaceDistance;

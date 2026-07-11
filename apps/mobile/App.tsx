@@ -1,4 +1,8 @@
 import { View, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+} from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import {
   useFonts,
@@ -14,6 +18,7 @@ import { LoginScreen } from "./src/screens/LoginScreen.js";
 import { MainTabs } from "./src/screens/MainTabs.js";
 import { DayDetailScreen } from "./src/screens/DayDetailScreen.js";
 import { CheckinScreen } from "./src/screens/CheckinScreen.js";
+import { LogWorkoutScreen } from "./src/screens/LogWorkoutScreen.js";
 import { GoalScreen } from "./src/screens/GoalScreen.js";
 import { ChatScreen } from "./src/screens/ChatScreen.js";
 
@@ -24,6 +29,8 @@ function Router() {
       return <DayDetailScreen dayId={route.dayId} />;
     case "checkin":
       return <CheckinScreen dayId={route.dayId} />;
+    case "logWorkout":
+      return <LogWorkoutScreen />;
     case "goal":
       return <GoalScreen goalId={route.goalId} />;
     case "chat":
@@ -67,14 +74,19 @@ export default function App() {
   }
 
   return (
-    <AuthProvider>
-      <Gate />
-      <StatusBar style="light" />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <AuthProvider>
+          <Gate />
+          <StatusBar style="light" />
+        </AuthProvider>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: color.surface0 },
   center: {
     flex: 1,
     backgroundColor: color.surface0,

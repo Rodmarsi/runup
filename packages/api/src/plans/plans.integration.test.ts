@@ -194,6 +194,47 @@ describe("check-in com feedback", () => {
   });
 });
 
+describe("treino avulso (sem plano/vínculo)", () => {
+  it("aluno sem treinador registra um treino avulso", async () => {
+    const student = await register("student", "avulso1@runup.app");
+    const res = await app.inject({
+      method: "POST",
+      url: "/me/workout-logs",
+      headers: auth(student.token),
+      payload: {
+        distanceMeters: 5000,
+        durationSeconds: 1800,
+        perceivedEffort: 6,
+        notes: "corrida leve no parque",
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toMatchObject({
+      source: "manual",
+      workoutDayId: null,
+      distanceMeters: 5000,
+    });
+
+    const stats = await app.inject({
+      method: "GET",
+      url: "/me/stats",
+      headers: auth(student.token),
+    });
+    expect(stats.json().workoutCount).toBe(1);
+  });
+
+  it("coach não pode registrar treino avulso (403)", async () => {
+    const coach = await register("coach", "avulso-coach@runup.app");
+    const res = await app.inject({
+      method: "POST",
+      url: "/me/workout-logs",
+      headers: auth(coach.token),
+      payload: { distanceMeters: 5000 },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+});
+
 describe("comentários no treino", () => {
   it("treinador e aluno comentam no mesmo dia", async () => {
     const { coach, student } = await linkedPair("c1");

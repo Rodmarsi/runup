@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@runup/db";
 import { errors } from "../errors.js";
-import type { CreatePlanInput, LogWorkoutInput } from "./schemas.js";
+import type { CreatePlanInput, LogWorkoutInput, LogStandaloneWorkoutInput } from "./schemas.js";
 
 export class PlanService {
   constructor(private readonly db: PrismaClient) {}
@@ -117,6 +117,21 @@ export class PlanService {
           notes: input.notes,
         },
       });
+    });
+  }
+
+  /** Treino avulso — o aluno registra algo que fez sem estar num dia de plano. */
+  async logStandaloneWorkout(studentId: string, input: LogStandaloneWorkoutInput) {
+    return this.db.workoutLog.create({
+      data: {
+        studentId,
+        source: "manual",
+        distanceMeters: input.distanceMeters,
+        durationSeconds: input.durationSeconds,
+        perceivedEffort: input.perceivedEffort,
+        pain: input.pain,
+        notes: input.notes,
+      },
     });
   }
 

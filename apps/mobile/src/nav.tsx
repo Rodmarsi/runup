@@ -4,6 +4,7 @@ export type Route =
   | { name: "home" }
   | { name: "day"; dayId: string }
   | { name: "checkin"; dayId: string }
+  | { name: "logWorkout" }
   | { name: "goal"; goalId: string }
   | { name: "chat"; linkId: string; withName: string };
 

@@ -7,6 +7,7 @@ import { GoalService } from "./goal-service.js";
 import {
   createPlanSchema,
   logWorkoutSchema,
+  logStandaloneWorkoutSchema,
   commentSchema,
   createGoalSchema,
 } from "./schemas.js";
@@ -45,6 +46,14 @@ export function planRoutes(db: PrismaClient) {
       const parsed = logWorkoutSchema.safeParse(request.body);
       if (!parsed.success) throw errors.validation(parsed.error.flatten());
       const log = await plans.logWorkout(request.authUser!.id, id, parsed.data);
+      reply.status(201).send(log);
+    });
+
+    // Aluno registra um treino avulso, sem estar ligado a um dia de plano.
+    app.post("/me/workout-logs", asStudent, async (request, reply) => {
+      const parsed = logStandaloneWorkoutSchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      const log = await plans.logStandaloneWorkout(request.authUser!.id, parsed.data);
       reply.status(201).send(log);
     });
 

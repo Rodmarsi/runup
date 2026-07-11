@@ -20,6 +20,7 @@ import {
   type CreatePlanInput,
   type ImportPreview,
   type LogWorkoutInput,
+  type LogStandaloneWorkoutInput,
 } from "./types.js";
 
 export * from "./types.js";
@@ -89,6 +90,10 @@ export class RunUpClient {
 
   logWorkout(dayId: string, input: LogWorkoutInput) {
     return this.request("POST", `/workout-days/${dayId}/log`, input);
+  }
+
+  logStandaloneWorkout(input: LogStandaloneWorkoutInput) {
+    return this.request("POST", "/me/workout-logs", input);
   }
 
   stats(): Promise<Stats> {

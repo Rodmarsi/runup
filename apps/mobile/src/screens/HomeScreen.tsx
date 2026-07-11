@@ -100,13 +100,18 @@ export function HomeScreen() {
             const isToday = iso === today;
             const dow = WEEKDAYS[new Date(`${iso}T12:00:00Z`).getUTCDay()];
             return (
-              <View key={iso} style={[styles.dayCell, isToday && styles.dayCellToday]}>
+              <Pressable
+                key={iso}
+                onPress={() => d && navigate({ name: "day", dayId: d.id })}
+                disabled={!d}
+                style={[styles.dayCell, isToday && styles.dayCellToday]}
+              >
                 <Text style={[styles.dayDow, isToday && styles.dayTextToday]}>{dow}</Text>
                 <Text style={[styles.dayNum, isToday && styles.dayTextToday]}>
                   {iso.slice(8, 10)}
                 </Text>
                 <View style={[styles.dot, dotStyle(d?.status)]} />
-              </View>
+              </Pressable>
             );
           })}
         </View>
@@ -125,6 +130,20 @@ export function HomeScreen() {
               <Text style={styles.heroSub}>{summarize(todayDay).sub}</Text>
             </LinearGradient>
           </Pressable>
+        ) : days.length === 0 ? (
+          <View style={[styles.card, styles.restCard]}>
+            <Text style={text.secondary}>
+              Você ainda não tem um treinador vinculado, então não há plano por
+              aqui. Enquanto isso, registre os treinos que fizer por conta
+              própria.
+            </Text>
+            <Pressable
+              onPress={() => navigate({ name: "logWorkout" })}
+              style={styles.logWorkoutBtn}
+            >
+              <Text style={styles.logWorkoutText}>Registrar treino avulso</Text>
+            </Pressable>
+          </View>
         ) : (
           <View style={[styles.card, styles.restCard]}>
             <Text style={text.secondary}>Sem treino hoje — dia de descanso.</Text>
@@ -230,6 +249,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   restCard: { marginBottom: 12 },
+  logWorkoutBtn: {
+    marginTop: 12,
+    alignSelf: "flex-start",
+    backgroundColor: color.orangeDim,
+    borderRadius: 99,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  logWorkoutText: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
   metricsRow: { flexDirection: "row", gap: 8 },
   metricCard: {
     flex: 1,
