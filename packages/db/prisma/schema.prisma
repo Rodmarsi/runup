@@ -62,6 +62,38 @@ enum GoalStatus {
   abandoned
 }
 
+enum WorkoutLogKind {
+  running
+  strength
+  mobility
+  bike
+  walk
+  other
+}
+
+enum RaceStatus {
+  interested
+  registered
+  completed
+}
+
+enum Sex {
+  male
+  female
+  other
+}
+
+enum ExperienceLevel {
+  beginner
+  intermediate
+  advanced
+}
+
+enum MissionPeriod {
+  daily
+  weekly
+}
+
 model User {
   id           String       @id @default(uuid())
   role         UserRole
@@ -85,6 +117,12 @@ model User {
   templates      WorkoutTemplate[]
   stravaLink     StravaConnection?
   refreshTokens  RefreshToken[]
+  athleteProfile AthleteProfile?
+  athleteProgress AthleteProgress?
+  shoes          Shoe[]
+  races          Race[]
+  achievements   Achievement[]
+  missions       Mission[]
 }
 
 model RefreshToken {
@@ -157,6 +195,8 @@ model WorkoutDay {
   status   WorkoutDayStatus @default(pending)
   // Blocos e itens guardados como JSON (estrutura em @runup/types).
   blocks   Json
+  // Dia de recuperação obrigatória (ex.: após treino de alta carga) — indicador visual no calendário.
+  mandatoryRecovery Boolean @default(false)
   logs     WorkoutLog[]
   comments WorkoutComment[]
 
@@ -189,6 +229,9 @@ model WorkoutLog {
   student           User             @relation(fields: [studentId], references: [id])
   studentId         String
   source            WorkoutLogSource @default(manual)
+  // Tipo de atividade — permite filtrar o histórico (corrida/musculação/bike/...)
+  // e distinguir os dois treinos de um mesmo dia (ex.: corrida + musculação).
+  kind              WorkoutLogKind   @default(running)
   // Id da atividade no Strava — evita importar a mesma atividade duas vezes.
   stravaActivityId  String?          @unique
   completedAt       DateTime         @default(now())
@@ -199,12 +242,18 @@ model WorkoutLog {
   cadence           Int?
   elevationGainM    Int?
   splits            Json?
+  caloriesKcal      Int?
+  // Texto livre (ex.: "22°C, ensolarado") — sem integração com provedor de clima ainda.
+  weather           String?
+  shoe              Shoe?            @relation(fields: [shoeId], references: [id])
+  shoeId            String?
   perceivedEffort   Int?
   pain              String?
   notes             String?
 
   @@index([studentId])
   @@index([workoutDayId])
+  @@index([shoeId])
 }
 
 model BodyMetric {
@@ -277,4 +326,96 @@ model StravaConnection {
   refreshToken String
   expiresAt    DateTime
   connectedAt  DateTime @default(now())
+}
+
+/** Dados estáticos do atleta (tela Perfil > Informações) — separado de `BodyMetric`, que é a série histórica de peso. */
+model AthleteProfile {
+  id                     String           @id @default(uuid())
+  student                User             @relation(fields: [studentId], references: [id])
+  studentId              String           @unique
+  heightCm               Float?
+  birthDate              DateTime?
+  sex                    Sex?
+  hrMaxBpm               Int?
+  vo2max                 Float?
+  experience             ExperienceLevel?
+  weeklyAvailabilityDays Int?
+  updatedAt              DateTime         @updatedAt
+}
+
+/** Progresso de gamificação (XP/nível) — 1 registro por aluno. */
+model AthleteProgress {
+  id        String   @id @default(uuid())
+  student   User     @relation(fields: [studentId], references: [id])
+  studentId String   @unique
+  xp        Int      @default(0)
+  level     Int      @default(1)
+  updatedAt DateTime @updatedAt
+}
+
+/** Conquista desbloqueada (ex.: "first_5k", "100km_total"). */
+model Achievement {
+  id         String   @id @default(uuid())
+  student    User     @relation(fields: [studentId], references: [id])
+  studentId  String
+  code       String
+  achievedAt DateTime @default(now())
+
+  @@unique([studentId, code])
+  @@index([studentId])
+}
+
+/** Missão diária/semanal (ex.: "correr 3x esta semana"). */
+model Mission {
+  id          String        @id @default(uuid())
+  student     User          @relation(fields: [studentId], references: [id])
+  studentId   String
+  code        String
+  period      MissionPeriod
+  // Dia (missão diária) ou início da semana (missão semanal) a que se refere.
+  targetDate  DateTime
+  progress    Int           @default(0)
+  target      Int
+  completedAt DateTime?
+
+  @@index([studentId])
+}
+
+/** Tênis de corrida — km acumulado e alerta de vida útil. */
+model Shoe {
+  id        String       @id @default(uuid())
+  student   User         @relation(fields: [studentId], references: [id])
+  studentId String
+  name      String
+  brand     String?
+  model     String?
+  totalKm   Float        @default(0)
+  // Limite de km a partir do qual o app avisa pra trocar de tênis (ex.: 600/800/1000).
+  alertKm   Int?
+  retiredAt DateTime?
+  createdAt DateTime     @default(now())
+  logs      WorkoutLog[]
+
+  @@index([studentId])
+}
+
+/** Prova cadastrada pelo aluno — usada pro ícone de medalha no calendário e contagem regressiva. */
+model Race {
+  id                String     @id @default(uuid())
+  student           User       @relation(fields: [studentId], references: [id])
+  studentId         String
+  name              String
+  city              String?
+  state             String?
+  raceDate          DateTime
+  startTime         String?
+  distanceMeters    Int?
+  targetTimeSeconds Int?
+  courseUrl         String?
+  registrationUrl   String?
+  status            RaceStatus @default(interested)
+  createdAt         DateTime   @default(now())
+
+  @@index([studentId])
+  @@index([raceDate])
 }

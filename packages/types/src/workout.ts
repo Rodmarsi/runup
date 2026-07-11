@@ -37,6 +37,8 @@ export interface WorkoutDay {
   date: IsoDate;
   status: WorkoutDayStatus;
   blocks: Block[];
+  /** Dia de recuperação obrigatória — indicador visual (bolinha azul) no calendário. */
+  mandatoryRecovery: boolean;
 }
 
 /** Natureza do bloco. */

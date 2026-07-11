@@ -6,3 +6,7 @@ export * from "./log.js";
 export * from "./goal.js";
 export * from "./messaging.js";
 export * from "./strava.js";
+export * from "./equipment.js";
+export * from "./races.js";
+export * from "./athlete-profile.js";
+export * from "./gamification.js";
