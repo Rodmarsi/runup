@@ -30,6 +30,8 @@ export const errors = {
     new AppError(422, "VALIDATION_ERROR", "Dados inválidos", details),
   studentNotFound: () =>
     new AppError(404, "STUDENT_NOT_FOUND", "Nenhum aluno com este email"),
+  coachNotFound: () =>
+    new AppError(404, "COACH_NOT_FOUND", "Nenhum treinador com este email"),
   alreadyLinked: () =>
     new AppError(409, "ALREADY_LINKED", "Já existe um vínculo com este aluno"),
   inviteNotFound: () =>

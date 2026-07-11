@@ -3,6 +3,7 @@ import {
   type AuthResult,
   type RegisterInput,
   type AuthUser,
+  type UpdateMeInput,
   type WorkoutDayDto,
   type WorkoutDayDetailDto,
   type Stats,
@@ -14,6 +15,8 @@ import {
   type StravaStatus,
   type StravaSyncResult,
   type CoachStudentDto,
+  type CoachInviteDto,
+  type StudentInviteDto,
   type SubscriptionView,
   type AdherenceAlert,
   type CoachStudentOverview,
@@ -149,8 +152,8 @@ export class RunUpClient {
     return this.request<AuthUser>("GET", "/auth/me");
   }
 
-  updateMe(name: string): Promise<AuthUser> {
-    return this.request<AuthUser>("PATCH", "/auth/me", { name });
+  updateMe(input: UpdateMeInput): Promise<AuthUser> {
+    return this.request<AuthUser>("PATCH", "/auth/me", input);
   }
 
   // --- Aluno ---
@@ -260,6 +263,38 @@ export class RunUpClient {
 
   inviteStudent(studentEmail: string) {
     return this.request("POST", "/coach/students/invite", { studentEmail });
+  }
+
+  /** Convites que alunos enviaram e aguardam este treinador aceitar. */
+  coachInvites(): Promise<CoachInviteDto[]> {
+    return this.request<CoachInviteDto[]>("GET", "/coach/invites");
+  }
+
+  acceptCoachInvite(linkId: string) {
+    return this.request("POST", `/coach/invites/${linkId}/accept`);
+  }
+
+  declineCoachInvite(linkId: string) {
+    return this.request("POST", `/coach/invites/${linkId}/decline`);
+  }
+
+  // --- Aluno: vínculo com treinador ---
+  /** Aluno convida um treinador (por email) — o treinador é quem aceita. */
+  inviteCoach(coachEmail: string) {
+    return this.request("POST", "/student/invite-coach", { coachEmail });
+  }
+
+  /** Convites que treinadores enviaram e aguardam este aluno aceitar. */
+  studentInvites(): Promise<StudentInviteDto[]> {
+    return this.request<StudentInviteDto[]>("GET", "/student/invites");
+  }
+
+  acceptStudentInvite(linkId: string) {
+    return this.request("POST", `/student/invites/${linkId}/accept`);
+  }
+
+  declineStudentInvite(linkId: string) {
+    return this.request("POST", `/student/invites/${linkId}/decline`);
   }
 
   coachStudentOverview(studentId: string): Promise<CoachStudentOverview> {

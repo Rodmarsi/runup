@@ -198,6 +198,20 @@ export function DayDetailScreen({ date }: { date: string }) {
         ) : (
           <View style={styles.card}>
             <Text style={text.secondary}>Sem treino registrado neste dia.</Text>
+            <View style={styles.emptyActions}>
+              <Pressable
+                onPress={() => navigate({ name: "createWorkout", initialDate: currentDate })}
+                style={styles.emptyBtn}
+              >
+                <Text style={styles.emptyBtnText}>Criar treino</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => navigate({ name: "aiPlanWizard" })}
+                style={styles.emptyBtn}
+              >
+                <Text style={styles.emptyBtnText}>✨ Criar com IA</Text>
+              </Pressable>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -248,6 +262,14 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   mainCard: { borderColor: "rgba(255,85,0,0.35)" },
+  emptyActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
+  emptyBtn: {
+    backgroundColor: color.orangeDim,
+    borderRadius: 99,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  emptyBtnText: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
   item: { fontFamily: font.regular, fontSize: 13, color: color.textPrimary, marginVertical: 2 },
   comment: {
     backgroundColor: color.surface3,

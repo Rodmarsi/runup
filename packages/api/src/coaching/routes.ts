@@ -8,7 +8,7 @@ import { AdherenceService } from "./adherence-service.js";
 import { ProfileService } from "../profile/service.js";
 import { GoalService } from "../plans/goal-service.js";
 import { PlanService } from "../plans/service.js";
-import { inviteSchema, upgradeSchema } from "./schemas.js";
+import { inviteSchema, inviteCoachSchema, upgradeSchema } from "./schemas.js";
 
 export function coachingRoutes(db: PrismaClient) {
   const coaching = new CoachingService(db);
@@ -52,6 +52,21 @@ export function coachingRoutes(db: PrismaClient) {
       return adherence.coachAlerts(request.authUser!.id);
     });
 
+    // Convites que alunos enviaram e aguardam este treinador aceitar.
+    app.get("/coach/invites", asCoach, async (request) => {
+      return coaching.pendingForCoach(request.authUser!.id);
+    });
+
+    app.post("/coach/invites/:id/accept", asCoach, async (request) => {
+      const { id } = request.params as { id: string };
+      return coaching.acceptAsCoach(request.authUser!.id, id);
+    });
+
+    app.post("/coach/invites/:id/decline", asCoach, async (request) => {
+      const { id } = request.params as { id: string };
+      return coaching.declineAsCoach(request.authUser!.id, id);
+    });
+
     // Visão de um aluno vinculado: perfil, stats, metas e treinos.
     app.get("/coach/students/:id/overview", asCoach, async (request) => {
       const { id } = request.params as { id: string };
@@ -76,6 +91,14 @@ export function coachingRoutes(db: PrismaClient) {
     });
 
     // --- Aluno ---
+    // Aluno convida um treinador (por email) — o treinador é quem aceita.
+    app.post("/student/invite-coach", asStudent, async (request, reply) => {
+      const parsed = inviteCoachSchema.safeParse(request.body);
+      if (!parsed.success) throw errors.validation(parsed.error.flatten());
+      const link = await coaching.inviteCoach(request.authUser!.id, parsed.data.coachEmail);
+      reply.status(201).send(link);
+    });
+
     app.get("/student/invites", asStudent, async (request) => {
       return coaching.pendingForStudent(request.authUser!.id);
     });

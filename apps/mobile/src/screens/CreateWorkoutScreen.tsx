@@ -39,14 +39,22 @@ function monthGrid(year: number, month: number): (Date | null)[] {
   return cells;
 }
 
+/** Diferença em meses (0-based) entre a data dada e hoje — pra abrir o mês certo no calendário. */
+function monthOffsetFor(iso?: string): number {
+  if (!iso) return 0;
+  const now = new Date();
+  const [y, m] = iso.split("-").map(Number) as [number, number];
+  return (y - now.getFullYear()) * 12 + (m - 1 - now.getMonth());
+}
+
 /** Aluno agenda um ou mais treinos futuros por conta própria — sem treinador. */
-export function CreateWorkoutScreen() {
+export function CreateWorkoutScreen({ initialDate }: { initialDate?: string }) {
   const { goHome } = useNav();
   const [kind, setKind] = useState<BlockKind>("running");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [monthOffset, setMonthOffset] = useState(0);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [monthOffset, setMonthOffset] = useState(() => monthOffsetFor(initialDate));
+  const [selectedDates, setSelectedDates] = useState<string[]>(initialDate ? [initialDate] : []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -10,6 +10,12 @@ export interface AuthUser {
   name: string;
   email: string;
   role: UserRole;
+  avatarUrl?: string | null;
+}
+
+export interface UpdateMeInput {
+  name?: string;
+  avatarUrl?: string;
 }
 
 export interface AuthResult {
@@ -221,10 +227,27 @@ export interface StravaSyncResult {
   prsUpdated: number;
 }
 
+/** Convite pendente enviado por um aluno, aguardando o treinador aceitar. */
+export interface CoachInviteDto {
+  id: string;
+  status: "pending";
+  createdAt: string;
+  student: { id: string; name: string; email: string };
+}
+
+/** Convite pendente enviado por um treinador, aguardando o aluno aceitar. */
+export interface StudentInviteDto {
+  id: string;
+  status: "pending";
+  createdAt: string;
+  coach: { id: string; name: string; email: string };
+}
+
 // --- Treinador ---
 export interface CoachStudentDto {
   id: string;
   status: "pending" | "active" | "ended";
+  initiatedBy: "coach" | "student";
   createdAt: string;
   student: { id: string; name: string; email: string };
 }

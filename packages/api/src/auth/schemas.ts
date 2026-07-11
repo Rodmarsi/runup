@@ -17,7 +17,10 @@ export const refreshSchema = z.object({
 });
 
 export const updateMeSchema = z.object({
-  name: z.string().min(2).max(80),
+  name: z.string().min(2).max(80).optional(),
+  // Data URI (ex.: "data:image/jpeg;base64,...") — sem storage externo, guarda
+  // direto no banco; por isso o limite de tamanho (evita payloads absurdos).
+  avatarUrl: z.string().max(700_000).optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

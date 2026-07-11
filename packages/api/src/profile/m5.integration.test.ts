@@ -125,6 +125,25 @@ describe("perfil do atleta e edição de conta", () => {
     });
     expect(res.json()).toMatchObject({ name: "Novo Nome" });
   });
+
+  it("aluno atualiza a foto de perfil (avatarUrl)", async () => {
+    const s = await register("student", "avatar1@runup.app");
+    const dataUri = "data:image/jpeg;base64,/9j/fakebase64==";
+    const res = await app.inject({
+      method: "PATCH",
+      url: "/auth/me",
+      headers: auth(s.token),
+      payload: { avatarUrl: dataUri },
+    });
+    expect(res.json()).toMatchObject({ avatarUrl: dataUri });
+
+    const me = await app.inject({
+      method: "GET",
+      url: "/auth/me",
+      headers: auth(s.token),
+    });
+    expect(me.json().avatarUrl).toBe(dataUri);
+  });
 });
 
 describe("estatísticas", () => {

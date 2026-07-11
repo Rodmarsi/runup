@@ -82,6 +82,100 @@ describe("convite → aceite", () => {
   });
 });
 
+describe("aluno convida treinador → treinador aceita", () => {
+  it("aluno convida por email e o treinador aceita, virando vínculo ativo", async () => {
+    const coach = await registerUser("coach", "coach-rev1@runup.app");
+    const student = await registerUser("student", "aluno-rev1@runup.app");
+
+    const inv = await app.inject({
+      method: "POST",
+      url: "/student/invite-coach",
+      headers: auth(student),
+      payload: { coachEmail: "coach-rev1@runup.app" },
+    });
+    expect(inv.statusCode).toBe(201);
+    expect(inv.json()).toMatchObject({ status: "pending", initiatedBy: "student" });
+
+    // Não deve aparecer nos convites que o ALUNO precisa responder (foi ele quem iniciou).
+    const studentInvites = await app.inject({
+      method: "GET",
+      url: "/student/invites",
+      headers: auth(student),
+    });
+    expect(studentInvites.json()).toHaveLength(0);
+
+    const coachInvites = await app.inject({
+      method: "GET",
+      url: "/coach/invites",
+      headers: auth(coach),
+    });
+    expect(coachInvites.json()).toHaveLength(1);
+    const linkId = coachInvites.json()[0].id;
+
+    const acc = await app.inject({
+      method: "POST",
+      url: `/coach/invites/${linkId}/accept`,
+      headers: auth(coach),
+    });
+    expect(acc.statusCode).toBe(200);
+    expect(acc.json().status).toBe("active");
+  });
+
+  it("convidar treinador com email inexistente retorna 404", async () => {
+    const student = await registerUser("student", "aluno-rev2@runup.app");
+    const res = await app.inject({
+      method: "POST",
+      url: "/student/invite-coach",
+      headers: auth(student),
+      payload: { coachEmail: "ninguem@runup.app" },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().code).toBe("COACH_NOT_FOUND");
+  });
+
+  it("treinador recusa o convite do aluno → vínculo vira ended", async () => {
+    const coach = await registerUser("coach", "coach-rev3@runup.app");
+    const student = await registerUser("student", "aluno-rev3@runup.app");
+    await app.inject({
+      method: "POST",
+      url: "/student/invite-coach",
+      headers: auth(student),
+      payload: { coachEmail: "coach-rev3@runup.app" },
+    });
+    const linkId = (
+      await app.inject({ method: "GET", url: "/coach/invites", headers: auth(coach) })
+    ).json()[0].id;
+
+    const dec = await app.inject({
+      method: "POST",
+      url: `/coach/invites/${linkId}/decline`,
+      headers: auth(coach),
+    });
+    expect(dec.json().status).toBe("ended");
+  });
+
+  it("aluno não pode aceitar o próprio convite enviado ao treinador (404)", async () => {
+    const coach = await registerUser("coach", "coach-rev4@runup.app");
+    const student = await registerUser("student", "aluno-rev4@runup.app");
+    await app.inject({
+      method: "POST",
+      url: "/student/invite-coach",
+      headers: auth(student),
+      payload: { coachEmail: "coach-rev4@runup.app" },
+    });
+    const linkId = (
+      await app.inject({ method: "GET", url: "/coach/invites", headers: auth(coach) })
+    ).json()[0].id;
+
+    const res = await app.inject({
+      method: "POST",
+      url: `/student/invites/${linkId}/accept`,
+      headers: auth(student),
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});
+
 describe("autorização por papel", () => {
   it("aluno não pode convidar (403)", async () => {
     const student = await registerUser("student", "aluno4@runup.app");

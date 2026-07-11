@@ -22,7 +22,7 @@ export type Route =
   | { name: "settings" }
   | { name: "activity"; log: WorkoutLogDto }
   | { name: "analytics" }
-  | { name: "createWorkout" }
+  | { name: "createWorkout"; initialDate?: string }
   | { name: "aiPlanWizard"; prefill?: AiPlanPrefill }
   | { name: "races" }
   | { name: "raceDetail"; race: RaceDto };

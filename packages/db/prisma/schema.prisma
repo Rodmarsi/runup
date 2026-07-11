@@ -27,6 +27,11 @@ enum CoachStudentStatus {
   ended
 }
 
+enum InvitedBy {
+  coach
+  student
+}
+
 enum SubscriptionTier {
   free
   pro
@@ -152,14 +157,16 @@ model RefreshToken {
 }
 
 model CoachStudent {
-  id        String             @id @default(uuid())
-  coach     User               @relation("CoachLinks", fields: [coachId], references: [id])
-  coachId   String
-  student   User               @relation("StudentLinks", fields: [studentId], references: [id])
-  studentId String
-  status    CoachStudentStatus @default(pending)
-  createdAt DateTime           @default(now())
-  messages  Message[]
+  id          String             @id @default(uuid())
+  coach       User               @relation("CoachLinks", fields: [coachId], references: [id])
+  coachId     String
+  student     User               @relation("StudentLinks", fields: [studentId], references: [id])
+  studentId   String
+  status      CoachStudentStatus @default(pending)
+  // Quem iniciou o convite — decide quem precisa aceitar/recusar (a outra parte).
+  initiatedBy InvitedBy          @default(coach)
+  createdAt   DateTime           @default(now())
+  messages    Message[]
 
   @@unique([coachId, studentId])
   @@index([coachId])

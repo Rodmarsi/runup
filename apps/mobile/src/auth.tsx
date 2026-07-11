@@ -19,6 +19,7 @@ interface AuthState {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   updateName: (name: string) => Promise<void>;
+  updateAvatar: (dataUri: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -99,7 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       },
       updateName: async (name) => {
-        const updated = await api.updateMe(name);
+        const updated = await api.updateMe({ name });
+        setUser(updated);
+      },
+      updateAvatar: async (dataUri) => {
+        const updated = await api.updateMe({ avatarUrl: dataUri });
         setUser(updated);
       },
     }),

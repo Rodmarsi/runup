@@ -1,8 +1,18 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  TextInput,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { color, border } from "@runup/ui/tokens";
 import { font } from "../theme.js";
-import type { WorkoutDayDto, RaceDto } from "@runup/api-client";
+import { ApiError } from "@runup/api-client";
+import type { WorkoutDayDto, RaceDto, ConversationDto, StudentInviteDto } from "@runup/api-client";
 import { text } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
@@ -32,23 +42,52 @@ export function PlanoScreen() {
   const { navigate } = useNav();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [races, setRaces] = useState<RaceDto[]>([]);
+  const [conversations, setConversations] = useState<ConversationDto[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<StudentInviteDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [invitingCoach, setInvitingCoach] = useState(false);
+  const [coachEmail, setCoachEmail] = useState("");
+  const [inviteSaving, setInviteSaving] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
     setError(false);
-    Promise.all([api.calendar(), api.races()])
-      .then(([cal, rc]) => {
+    Promise.all([api.calendar(), api.races(), api.conversations(), api.studentInvites()])
+      .then(([cal, rc, conv, invites]) => {
         setDays(cal);
         setRaces(rc);
+        setConversations(conv);
+        setPendingInvites(invites);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }
 
   useEffect(load, []);
+
+  async function sendCoachInvite() {
+    if (!coachEmail.trim()) return;
+    setInviteSaving(true);
+    setInviteError(null);
+    try {
+      await api.inviteCoach(coachEmail.trim());
+      setCoachEmail("");
+      setInvitingCoach(false);
+      Alert.alert("Convite enviado!", "O treinador vai receber seu convite.");
+    } catch (e) {
+      setInviteError(e instanceof ApiError ? e.message : "Não foi possível enviar o convite");
+    } finally {
+      setInviteSaving(false);
+    }
+  }
+
+  async function respondInvite(id: string, accept: boolean) {
+    await (accept ? api.acceptStudentInvite(id) : api.declineStudentInvite(id));
+    load();
+  }
 
   if (loading) {
     return (
@@ -92,6 +131,53 @@ export function PlanoScreen() {
           </Pressable>
         </View>
       </View>
+
+      {pendingInvites.length > 0 ? (
+        <View style={styles.coachCard}>
+          <Text style={[text.overline, styles.coachLabel]}>CONVITE DE TREINADOR</Text>
+          {pendingInvites.map((inv) => (
+            <View key={inv.id} style={styles.inviteRow}>
+              <Text style={[text.body, { flex: 1 }]}>{inv.coach.name} quer ser seu treinador</Text>
+              <Pressable onPress={() => respondInvite(inv.id, true)} style={styles.acceptBtn}>
+                <Text style={styles.acceptBtnText}>Aceitar</Text>
+              </Pressable>
+              <Pressable onPress={() => respondInvite(inv.id, false)} style={styles.declineBtn}>
+                <Text style={styles.declineBtnText}>Recusar</Text>
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      ) : conversations.length > 0 ? null : invitingCoach ? (
+        <View style={styles.coachCard}>
+          <Text style={[text.overline, styles.coachLabel]}>CONVIDAR TREINADOR</Text>
+          <TextInput
+            style={styles.input}
+            value={coachEmail}
+            onChangeText={setCoachEmail}
+            placeholder="email@treinador.com"
+            placeholderTextColor={color.textFaint}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          {inviteError && <Text style={styles.inviteErrorText}>{inviteError}</Text>}
+          <View style={styles.inviteFormRow}>
+            <Pressable onPress={() => setInvitingCoach(false)} style={styles.cancelBtn}>
+              <Text style={styles.cancelBtnText}>Cancelar</Text>
+            </Pressable>
+            <Pressable
+              onPress={sendCoachInvite}
+              disabled={inviteSaving}
+              style={[styles.acceptBtn, styles.acceptBtnWide]}
+            >
+              <Text style={styles.acceptBtnText}>{inviteSaving ? "..." : "Enviar convite"}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Pressable onPress={() => setInvitingCoach(true)} style={styles.hireBtn}>
+          <Text style={styles.hireBtnText}>Contratar treinador</Text>
+        </Pressable>
+      )}
 
       <View style={styles.monthHeader}>
         <Pressable onPress={() => setMonthOffset((m) => m - 1)} style={styles.monthNavBtn}>
@@ -164,6 +250,65 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   actionBtnText: { fontFamily: font.medium, fontSize: 11, color: color.textSecondary },
+  coachCard: {
+    marginTop: 14,
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 14,
+  },
+  coachLabel: { marginBottom: 8 },
+  inviteRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  input: {
+    backgroundColor: color.surface1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontFamily: font.regular,
+    fontSize: 14,
+    color: color.textPrimary,
+    marginBottom: 10,
+  },
+  inviteFormRow: { flexDirection: "row", gap: 8 },
+  inviteErrorText: { fontFamily: font.regular, fontSize: 12, color: color.danger, marginBottom: 8 },
+  acceptBtn: {
+    backgroundColor: color.orange500,
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  acceptBtnText: { fontFamily: font.semibold, fontSize: 12, color: color.ink },
+  acceptBtnWide: { flex: 1, alignItems: "center" },
+  declineBtn: {
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: border.strong,
+  },
+  declineBtnText: { fontFamily: font.medium, fontSize: 12, color: color.textSecondary },
+  cancelBtn: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: border.strong,
+  },
+  cancelBtnText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
+  hireBtn: {
+    marginTop: 14,
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 99,
+    backgroundColor: color.orangeDim,
+    borderWidth: 1,
+    borderColor: color.orange500,
+  },
+  hireBtnText: { fontFamily: font.semibold, fontSize: 13, color: color.orange400 },
   monthHeader: {
     flexDirection: "row",
     alignItems: "center",

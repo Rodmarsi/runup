@@ -16,7 +16,7 @@ export interface AuthTokens {
 }
 
 export interface AuthResult extends AuthTokens {
-  user: Pick<User, "id" | "name" | "email" | "role">;
+  user: Pick<User, "id" | "name" | "email" | "role" | "avatarUrl">;
 }
 
 /** Serviço de autenticação. Recebe o Prisma client por injeção (testável). */
@@ -89,6 +89,7 @@ export class AuthService {
     name: string;
     email: string;
     role: "student" | "coach";
+    avatarUrl: string | null;
   }): Promise<AuthResult> {
     const tokens = await this.issueTokens(user.id, user.role);
     return {
@@ -98,6 +99,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatarUrl: user.avatarUrl ?? undefined,
       },
     };
   }

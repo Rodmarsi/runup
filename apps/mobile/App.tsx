@@ -17,27 +17,23 @@ import { NavProvider, useNav } from "./src/nav.js";
 import { SettingsProvider } from "./src/settings.js";
 import { LoginScreen } from "./src/screens/LoginScreen.js";
 import { MainTabs } from "./src/screens/MainTabs.js";
-import { DayDetailScreen } from "./src/screens/DayDetailScreen.js";
 import { CheckinScreen } from "./src/screens/CheckinScreen.js";
 import { LogWorkoutScreen } from "./src/screens/LogWorkoutScreen.js";
 import { GoalScreen } from "./src/screens/GoalScreen.js";
 import { ChatScreen } from "./src/screens/ChatScreen.js";
-import { BodyInfoScreen } from "./src/screens/BodyInfoScreen.js";
-import { EquipmentScreen } from "./src/screens/EquipmentScreen.js";
-import { SettingsScreen } from "./src/screens/SettingsScreen.js";
-import { ActivityDetailScreen } from "./src/screens/ActivityDetailScreen.js";
-import { AnalisesScreen } from "./src/screens/AnalisesScreen.js";
 import { CreateWorkoutScreen } from "./src/screens/CreateWorkoutScreen.js";
 import { AiPlanWizardScreen } from "./src/screens/AiPlanWizardScreen.js";
-import { RacesScreen } from "./src/screens/RacesScreen.js";
-import { RaceDetailScreen } from "./src/screens/RaceDetailScreen.js";
 import { LiveWorkoutScreen } from "./src/screens/LiveWorkoutScreen.js";
 
+/**
+ * Rotas "de fluxo" (ação focada, sem bottom nav). Tudo mais — dia, provas,
+ * análises, informações, equipamentos, configurações, atividade — renderiza
+ * DENTRO do MainTabs (ver Router abaixo), então a tab bar continua visível e
+ * "voltar" retorna pra aba de onde a navegação partiu, não sempre pra Hoje.
+ */
 function Router() {
   const { route } = useNav();
   switch (route.name) {
-    case "day":
-      return <DayDetailScreen date={route.date} />;
     case "liveWorkout":
       return <LiveWorkoutScreen dayId={route.dayId} title={route.title} />;
     case "checkin":
@@ -48,24 +44,10 @@ function Router() {
       return <GoalScreen goalId={route.goalId} />;
     case "chat":
       return <ChatScreen linkId={route.linkId} withName={route.withName} />;
-    case "bodyInfo":
-      return <BodyInfoScreen />;
-    case "equipment":
-      return <EquipmentScreen />;
-    case "settings":
-      return <SettingsScreen />;
-    case "activity":
-      return <ActivityDetailScreen log={route.log} />;
-    case "analytics":
-      return <AnalisesScreen />;
     case "createWorkout":
-      return <CreateWorkoutScreen />;
+      return <CreateWorkoutScreen initialDate={route.initialDate} />;
     case "aiPlanWizard":
       return <AiPlanWizardScreen prefill={route.prefill} />;
-    case "races":
-      return <RacesScreen />;
-    case "raceDetail":
-      return <RaceDetailScreen race={route.race} />;
     default:
       return <MainTabs />;
   }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   View,
   Text,
+  Image,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
@@ -124,9 +125,13 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Pressable onPress={onOpenProfile} style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {user?.name.charAt(0).toUpperCase() ?? "?"}
-              </Text>
+              {user?.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {user?.name.charAt(0).toUpperCase() ?? "?"}
+                </Text>
+              )}
             </Pressable>
             <View>
               <Text style={text.muted}>{greeting()},</Text>
@@ -175,7 +180,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
                 <Text style={[styles.dayNum, isToday && styles.dayTextToday]}>
                   {iso.slice(8, 10)}
                 </Text>
-                <DayDots day={d} hasRace={raceDates.has(iso)} />
+                <DayDots day={d} hasRace={raceDates.has(iso)} onAccent={isToday} />
               </Pressable>
             );
           })}
@@ -340,6 +345,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarImage: { width: 36, height: 36, borderRadius: 99 },
   avatarText: { fontFamily: font.semibold, fontSize: 14, color: color.orange400 },
   streak: {
     backgroundColor: color.orangeDim,

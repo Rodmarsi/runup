@@ -93,7 +93,7 @@ export function authRoutes(db: PrismaClient, googleClient?: GoogleClient) {
       const authUser = request.authUser!;
       const user = await db.user.findUnique({
         where: { id: authUser.id },
-        select: { id: true, name: true, email: true, role: true },
+        select: { id: true, name: true, email: true, role: true, avatarUrl: true },
       });
       if (!user) throw errors.unauthorized();
       return user;
@@ -104,8 +104,8 @@ export function authRoutes(db: PrismaClient, googleClient?: GoogleClient) {
       if (!parsed.success) throw errors.validation(parsed.error.flatten());
       return db.user.update({
         where: { id: request.authUser!.id },
-        data: { name: parsed.data.name },
-        select: { id: true, name: true, email: true, role: true },
+        data: { name: parsed.data.name, avatarUrl: parsed.data.avatarUrl },
+        select: { id: true, name: true, email: true, role: true, avatarUrl: true },
       });
     });
   };

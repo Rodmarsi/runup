@@ -5,10 +5,12 @@ import type { WorkoutDayDto } from "@runup/api-client";
 // Azul de recuperação — funcional, não é cor da marca (regra do farol reserva o laranja pro hero).
 const RECOVERY_BLUE = "#5B9DFF";
 
-function statusColor(status: WorkoutDayDto["status"]): string {
+// Quando a bolinha fica sobre um fundo já laranja (dia atual destacado), o
+// laranja normal ficaria invisível — usa tinta escura pra continuar visível.
+function statusColor(status: WorkoutDayDto["status"], onAccent?: boolean): string {
   if (status === "done" || status === "partial") return color.success;
   if (status === "skipped") return color.danger;
-  return color.orange500;
+  return onAccent ? color.ink : color.orange500;
 }
 
 /**
@@ -16,11 +18,20 @@ function statusColor(status: WorkoutDayDto["status"]): string {
  * por tipo de treino planejado (ex.: corrida + musculação = duas bolinhas),
  * + uma azul se o dia é de recuperação obrigatória.
  */
-export function DayDots({ day, hasRace }: { day?: WorkoutDayDto; hasRace?: boolean }) {
+export function DayDots({
+  day,
+  hasRace,
+  onAccent,
+}: {
+  day?: WorkoutDayDto;
+  hasRace?: boolean;
+  /** A bolinha está sobre um fundo já laranja (célula do dia atual/selecionado). */
+  onAccent?: boolean;
+}) {
   if (hasRace) return <Text style={styles.medal}>🏅</Text>;
   if (!day) return <View style={styles.placeholder} />;
   const kinds = Array.from(new Set(day.blocks.map((b) => b.kind)));
-  const dotColor = statusColor(day.status);
+  const dotColor = statusColor(day.status, onAccent);
   return (
     <View style={styles.row}>
       {kinds.map((k, i) => (

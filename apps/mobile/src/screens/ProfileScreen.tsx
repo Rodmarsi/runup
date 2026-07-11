@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   View,
   Text,
+  Image,
   ScrollView,
   Pressable,
   TextInput,
@@ -10,6 +11,7 @@ import {
   Alert,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
+import * as ImagePicker from "expo-image-picker";
 import { color, border } from "@runup/ui/tokens";
 import { ApiError } from "@runup/api-client";
 import type {
@@ -53,12 +55,13 @@ const MISSION_LABEL: Record<string, string> = {
 const XP_PER_LEVEL = 100;
 
 export function ProfileScreen() {
-  const { user, logout, updateName } = useAuth();
+  const { user, logout, updateName, updateAvatar } = useAuth();
   const { navigate } = useNav();
   const { units } = useSettings();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(user?.name ?? "");
   const [savingName, setSavingName] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [prs, setPrs] = useState<PersonalRecordDto[]>([]);
   const [goals, setGoals] = useState<GoalDto[]>([]);
@@ -139,6 +142,32 @@ export function ProfileScreen() {
     }
   }
 
+  async function pickAvatar() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Sem permissão pra acessar suas fotos.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.4,
+      base64: true,
+    });
+    if (result.canceled || !result.assets[0]?.base64) return;
+
+    setSavingAvatar(true);
+    try {
+      const mime = result.assets[0].mimeType ?? "image/jpeg";
+      await updateAvatar(`data:${mime};base64,${result.assets[0].base64}`);
+    } catch {
+      Alert.alert("Não foi possível atualizar a foto. Tente de novo.");
+    } finally {
+      setSavingAvatar(false);
+    }
+  }
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -158,11 +187,18 @@ export function ProfileScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
       <View style={styles.hero}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user?.name.charAt(0).toUpperCase() ?? "?"}
-          </Text>
-        </View>
+        <Pressable onPress={pickAvatar} disabled={savingAvatar} style={styles.avatar}>
+          {user?.avatarUrl ? (
+            <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatarText}>
+              {user?.name.charAt(0).toUpperCase() ?? "?"}
+            </Text>
+          )}
+          <View style={styles.avatarEditBadge}>
+            <Text style={styles.avatarEditBadgeText}>{savingAvatar ? "…" : "✎"}</Text>
+          </View>
+        </Pressable>
         <Text style={styles.name}>{user?.name ?? ""}</Text>
         <Text style={text.muted}>{user?.email ?? ""}</Text>
       </View>
@@ -418,8 +454,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
+    overflow: "visible",
   },
+  avatarImage: { width: 72, height: 72, borderRadius: 99 },
   avatarText: { fontFamily: font.bold, fontSize: 28, color: color.orange400 },
+  avatarEditBadge: {
+    position: "absolute",
+    right: -2,
+    bottom: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 99,
+    backgroundColor: color.orange500,
+    borderWidth: 2,
+    borderColor: color.surface0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarEditBadgeText: { fontSize: 11, color: color.ink },
   name: { fontFamily: font.bold, fontSize: 18, color: color.textPrimary, marginBottom: 2 },
   label: { marginTop: 20, marginBottom: 8 },
   statGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
