@@ -18,6 +18,7 @@ import type {
   GoalDto,
   StravaStatus,
   ConversationDto,
+  GamificationSnapshot,
 } from "@runup/api-client";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
@@ -35,6 +36,22 @@ const RACE_LABEL: Record<string, string> = {
   other: "Prova",
 };
 
+const ACHIEVEMENT_LABEL: Record<string, string> = {
+  first_5k: "Primeiro 5 km",
+  first_10k: "Primeiro 10 km",
+  first_half: "Primeira Meia",
+  first_marathon: "Primeira Maratona",
+  "100km_total": "100 km acumulados",
+  "500km_total": "500 km acumulados",
+};
+
+const MISSION_LABEL: Record<string, string> = {
+  run_3x_week: "Treinar 3x essa semana",
+  log_today: "Registrar um treino hoje",
+};
+
+const XP_PER_LEVEL = 100;
+
 export function ProfileScreen() {
   const { user, logout, updateName } = useAuth();
   const { navigate } = useNav();
@@ -47,6 +64,7 @@ export function ProfileScreen() {
   const [goals, setGoals] = useState<GoalDto[]>([]);
   const [strava, setStrava] = useState<StravaStatus | null>(null);
   const [conversations, setConversations] = useState<ConversationDto[]>([]);
+  const [gamification, setGamification] = useState<GamificationSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -54,18 +72,20 @@ export function ProfileScreen() {
   const [stravaError, setStravaError] = useState<string | null>(null);
 
   async function load() {
-    const [s, p, g, st, conv] = await Promise.all([
+    const [s, p, g, st, conv, gam] = await Promise.all([
       api.stats(),
       api.personalRecords(),
       api.goals(),
       api.stravaStatus(),
       api.conversations(),
+      api.gamification(),
     ]);
     setStats(s);
     setPrs(p);
     setGoals(g);
     setStrava(st);
     setConversations(conv);
+    setGamification(gam);
   }
 
   function initialLoad() {
@@ -147,6 +167,21 @@ export function ProfileScreen() {
         <Text style={text.muted}>{user?.email ?? ""}</Text>
       </View>
 
+      {/* Nível */}
+      {gamification && (
+        <View style={styles.levelCard}>
+          <View style={styles.levelRow}>
+            <Text style={styles.levelLabel}>Nível {gamification.level}</Text>
+            <Text style={text.muted}>{gamification.xp} XP</Text>
+          </View>
+          <View style={styles.xpTrack}>
+            <View
+              style={[styles.xpFill, { width: `${gamification.xp % XP_PER_LEVEL}%` }]}
+            />
+          </View>
+        </View>
+      )}
+
       {/* Estatísticas */}
       <View style={styles.statGrid}>
         <Stat label="Distância total" value={`${distance(stats?.totalDistanceMeters ?? 0, units)} ${unitLabel(units)}`} />
@@ -154,6 +189,46 @@ export function ProfileScreen() {
         <Stat label="Treinos" value={String(stats?.workoutCount ?? 0)} />
         <Stat label="Sequência" value={`${stats?.streakDays ?? 0} dias`} />
       </View>
+
+      {/* Missões */}
+      {gamification && gamification.missions.length > 0 && (
+        <>
+          <Text style={[text.overline, styles.label]}>MISSÕES</Text>
+          {gamification.missions.map((m) => (
+            <View key={`${m.code}-${m.period}`} style={styles.missionRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{MISSION_LABEL[m.code] ?? m.code}</Text>
+                <View style={styles.missionTrack}>
+                  <View
+                    style={[
+                      styles.missionFill,
+                      { width: `${Math.min(100, (m.progress / m.target) * 100)}%` },
+                    ]}
+                  />
+                </View>
+              </View>
+              <Text style={styles.missionProgress}>
+                {m.completedAt ? "✓" : `${m.progress}/${m.target}`}
+              </Text>
+            </View>
+          ))}
+        </>
+      )}
+
+      {/* Conquistas */}
+      {gamification && gamification.achievements.length > 0 && (
+        <>
+          <Text style={[text.overline, styles.label]}>CONQUISTAS</Text>
+          <View style={styles.prGrid}>
+            {gamification.achievements.map((code) => (
+              <View key={code} style={styles.achievementCard}>
+                <Text style={styles.achievementIcon}>🏅</Text>
+                <Text style={styles.achievementLabel}>{ACHIEVEMENT_LABEL[code] ?? code}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
 
       {/* Treinador / chat */}
       {conversations.length > 0 && (
@@ -379,6 +454,49 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   prTime: { fontFamily: font.bold, fontSize: 18, color: color.textPrimary, marginTop: 4 },
+  levelCard: {
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 14,
+    marginBottom: 12,
+  },
+  levelRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
+  levelLabel: { fontFamily: font.bold, fontSize: 15, color: color.textPrimary },
+  xpTrack: { height: 6, borderRadius: 99, backgroundColor: color.surface4, overflow: "hidden" },
+  xpFill: { height: "100%", backgroundColor: color.orange500, borderRadius: 99 },
+  missionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 12,
+    marginBottom: 8,
+  },
+  missionTrack: {
+    height: 5,
+    borderRadius: 99,
+    backgroundColor: color.surface4,
+    overflow: "hidden",
+    marginTop: 6,
+  },
+  missionFill: { height: "100%", backgroundColor: color.orange500, borderRadius: 99 },
+  missionProgress: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
+  achievementCard: {
+    width: "48%",
+    alignItems: "center",
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 12,
+  },
+  achievementIcon: { fontSize: 24, marginBottom: 4 },
+  achievementLabel: { fontFamily: font.medium, fontSize: 11, color: color.textSecondary, textAlign: "center" },
   syncBtn: {
     backgroundColor: color.orangeDim,
     borderRadius: 99,

@@ -34,6 +34,8 @@ import {
   type RaceDto,
   type CreateRaceInput,
   type UpdateRaceInput,
+  type GamificationSnapshot,
+  type Insight,
 } from "./types.js";
 
 export * from "./types.js";
@@ -309,6 +311,19 @@ export class RunUpClient {
 
   deleteRace(id: string) {
     return this.request("DELETE", `/me/races/${id}`);
+  }
+
+  // --- Gamificação & insights ---
+  gamification(): Promise<GamificationSnapshot> {
+    return this.request<GamificationSnapshot>("GET", "/me/gamification");
+  }
+
+  insights(): Promise<Insight[]> {
+    return this.request<Insight[]>("GET", "/me/insights");
+  }
+
+  registerPushToken(token: string) {
+    return this.request("POST", "/me/push-token", { token });
   }
 
   private async request<T = unknown>(

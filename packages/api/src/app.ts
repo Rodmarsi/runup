@@ -21,6 +21,9 @@ import { equipmentRoutes } from "./equipment/routes.js";
 import { aiPlanRoutes } from "./ai-plan/routes.js";
 import type { PlanGenerator } from "./ai-plan/generator.js";
 import { raceRoutes } from "./races/routes.js";
+import { gamificationRoutes } from "./gamification/routes.js";
+import { notificationRoutes } from "./notifications/routes.js";
+import { insightsRoutes } from "./insights/routes.js";
 
 /** Formato padrão de erro da API: { code, message, details }. */
 export interface ApiError {
@@ -67,6 +70,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   app.register(equipmentRoutes(db));
   app.register(aiPlanRoutes(options.aiPlanGenerator));
   app.register(raceRoutes(db));
+  app.register(gamificationRoutes(db));
+  app.register(notificationRoutes(db));
+  app.register(insightsRoutes(db));
 
   app.setErrorHandler(
     (error: FastifyError, _request: FastifyRequest, reply: FastifyReply) => {

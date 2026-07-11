@@ -21,5 +21,6 @@ export async function resetDb() {
   await prisma.mission.deleteMany();
   await prisma.shoe.deleteMany();
   await prisma.race.deleteMany();
+  await prisma.pushToken.deleteMany();
   await prisma.user.deleteMany();
 }

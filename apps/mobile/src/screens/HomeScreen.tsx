@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { color, border } from "@runup/ui/tokens";
-import type { WorkoutDayDto, Stats, RaceDto } from "@runup/api-client";
+import type { WorkoutDayDto, Stats, RaceDto, Insight } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { useAuth } from "../auth.js";
 import { useNav } from "../nav.js";
@@ -54,6 +54,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [races, setRaces] = useState<RaceDto[]>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
@@ -63,11 +64,12 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   function load() {
     setLoading(true);
     setError(false);
-    Promise.all([api.calendar(), api.stats(), api.races()])
-      .then(([cal, st, rc]) => {
+    Promise.all([api.calendar(), api.stats(), api.races(), api.insights()])
+      .then(([cal, st, rc, ins]) => {
         setDays(cal);
         setStats(st);
         setRaces(rc);
+        setInsights(ins);
       })
       .catch((e) => {
         setError(true);
@@ -237,6 +239,17 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
           </View>
         )}
 
+        {/* Insights */}
+        {insights.length > 0 && (
+          <View style={styles.insights}>
+            {insights.map((insight) => (
+              <View key={insight.id} style={[styles.insightCard, insightStyle(insight.severity)]}>
+                <Text style={styles.insightText}>{insight.message}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Métricas da semana */}
         <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
@@ -270,6 +283,12 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
       </ScrollView>
     </View>
   );
+}
+
+function insightStyle(severity: Insight["severity"]) {
+  if (severity === "warning") return { borderColor: color.orange500 };
+  if (severity === "success") return { borderColor: color.success };
+  return {};
 }
 
 /** Datas (segunda a domingo) da semana atual + `weekOffset` semanas, no fuso local. */
@@ -379,4 +398,13 @@ const styles = StyleSheet.create({
   raceName: { fontFamily: font.bold, fontSize: 15, color: color.textPrimary, marginBottom: 4 },
   raceCountdown: { fontFamily: font.regular, fontSize: 12, color: color.textSecondary },
   raceCountdownNum: { fontFamily: font.bold, color: color.orange400 },
+  insights: { gap: 8, marginBottom: 12 },
+  insightCard: {
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 12,
+  },
+  insightText: { fontFamily: font.regular, fontSize: 12, color: color.textSecondary, lineHeight: 17 },
 });

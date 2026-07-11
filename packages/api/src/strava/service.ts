@@ -4,6 +4,7 @@ import { RACE_DISTANCE_METERS } from "@runup/core";
 import { errors } from "../errors.js";
 import { config } from "../config.js";
 import { signStravaState, verifyStravaState } from "../auth/tokens.js";
+import { GamificationService } from "../gamification/service.js";
 import type { StravaClient, StravaActivity, StravaTokens } from "./client.js";
 
 export interface SyncResult {
@@ -17,10 +18,14 @@ export interface SyncResult {
 const DISTANCE_TOLERANCE = 0.02;
 
 export class StravaService {
+  private readonly gamification: GamificationService;
+
   constructor(
     private readonly db: PrismaClient,
     private readonly client: StravaClient,
-  ) {}
+  ) {
+    this.gamification = new GamificationService(db);
+  }
 
   /** URL de autorização do Strava com `state` assinado (identifica o aluno). */
   buildAuthorizeUrl(studentId: string): string {
@@ -95,6 +100,7 @@ export class StravaService {
 
       const dayId = await this.matchDay(studentId, activity);
       await this.createLog(studentId, activity, dayId);
+      await this.gamification.onWorkoutLogged(studentId, activity.distanceMeters);
       result.imported += 1;
       if (dayId) {
         result.matched += 1;

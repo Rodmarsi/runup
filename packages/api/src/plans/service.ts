@@ -1,5 +1,7 @@
 import type { PrismaClient } from "@runup/db";
 import { errors } from "../errors.js";
+import { GamificationService } from "../gamification/service.js";
+import { NotificationService } from "../notifications/service.js";
 import type {
   CreatePlanInput,
   CreateSelfPlanInput,
@@ -9,7 +11,13 @@ import type {
 } from "./schemas.js";
 
 export class PlanService {
-  constructor(private readonly db: PrismaClient) {}
+  private readonly gamification: GamificationService;
+  private readonly notifications: NotificationService;
+
+  constructor(private readonly db: PrismaClient) {
+    this.gamification = new GamificationService(db);
+    this.notifications = new NotificationService(db);
+  }
 
   /** Garante que o treinador tem vínculo ativo com o aluno. */
   private async assertActiveLink(coachId: string, studentId: string) {
@@ -26,7 +34,7 @@ export class PlanService {
   async createPlan(coachId: string, input: CreatePlanInput) {
     await this.assertActiveLink(coachId, input.studentId);
 
-    return this.db.$transaction(async (tx) => {
+    const plan = await this.db.$transaction(async (tx) => {
       const plan = await tx.plan.create({
         data: {
           ownerId: coachId,
@@ -55,6 +63,12 @@ export class PlanService {
 
       return plan;
     });
+    await this.notifications.send(
+      input.studentId,
+      "Novo treino!",
+      `Seu treinador enviou o plano "${plan.title}".`,
+    );
+    return plan;
   }
 
   /**
@@ -137,7 +151,7 @@ export class PlanService {
     const isOwner = day.plan.assignments.some((a) => a.studentId === studentId);
     if (!isOwner) throw errors.dayNotFound();
 
-    return this.db.$transaction(async (tx) => {
+    const log = await this.db.$transaction(async (tx) => {
       await tx.workoutDay.update({
         where: { id: dayId },
         data: { status: input.status },
@@ -160,11 +174,13 @@ export class PlanService {
         },
       });
     });
+    await this.gamification.onWorkoutLogged(studentId, log.distanceMeters);
+    return log;
   }
 
   /** Treino avulso — o aluno registra algo que fez sem estar num dia de plano. */
   async logStandaloneWorkout(studentId: string, input: LogStandaloneWorkoutInput) {
-    return this.db.workoutLog.create({
+    const log = await this.db.workoutLog.create({
       data: {
         studentId,
         source: "manual",
@@ -176,6 +192,8 @@ export class PlanService {
         notes: input.notes,
       },
     });
+    await this.gamification.onWorkoutLogged(studentId, log.distanceMeters);
+    return log;
   }
 
   /** Histórico de atividades (Strava + registradas manualmente) do aluno. */
@@ -204,9 +222,21 @@ export class PlanService {
     if (!day) throw errors.dayNotFound();
     await this.assertDayAccess(userId, role, day.plan.assignments, day.plan.ownerId);
 
-    return this.db.workoutComment.create({
+    const comment = await this.db.workoutComment.create({
       data: { workoutDayId: dayId, authorId: userId, text },
     });
+
+    // Notifica a outra parte do vínculo (dono do plano ou aluno atribuído).
+    const recipients = new Set(
+      [day.plan.ownerId, ...day.plan.assignments.map((a) => a.studentId)].filter(
+        (id) => id !== userId,
+      ),
+    );
+    for (const recipientId of recipients) {
+      await this.notifications.send(recipientId, "Novo comentário", text.slice(0, 100));
+    }
+
+    return comment;
   }
 
   private async assertDayAccess(

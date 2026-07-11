@@ -335,6 +335,29 @@ export interface CreateRaceInput {
   registrationUrl?: string;
 }
 
+export interface MissionDto {
+  code: string;
+  period: "daily" | "weekly";
+  progress: number;
+  target: number;
+  completedAt: string | null;
+}
+
+export interface GamificationSnapshot {
+  xp: number;
+  level: number;
+  achievements: string[];
+  missions: MissionDto[];
+}
+
+export type InsightSeverity = "info" | "warning" | "success";
+
+export interface Insight {
+  id: string;
+  message: string;
+  severity: InsightSeverity;
+}
+
 export interface UpdateRaceInput {
   name?: string;
   city?: string;

@@ -123,6 +123,18 @@ model User {
   races          Race[]
   achievements   Achievement[]
   missions       Mission[]
+  pushTokens     PushToken[]
+}
+
+/** Token de push (Expo) — um dispositivo pode registrar mais de um ao longo do tempo. */
+model PushToken {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model RefreshToken {
@@ -378,6 +390,7 @@ model Mission {
   target      Int
   completedAt DateTime?
 
+  @@unique([studentId, code, targetDate])
   @@index([studentId])
 }
 
