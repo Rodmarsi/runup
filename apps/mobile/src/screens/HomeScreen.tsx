@@ -14,14 +14,10 @@ import { text, font, gradients } from "../theme.js";
 import { useAuth } from "../auth.js";
 import { useNav } from "../nav.js";
 import { api } from "../api.js";
-import { km, pace } from "../format.js";
+import { km, pace, localIsoDate, greeting } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 
 const WEEKDAYS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
-
-function isoToday(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /** Descreve o primeiro item de corrida de um dia, para o card hero. */
 function summarize(day: WorkoutDayDto): { title: string; sub: string } {
@@ -43,13 +39,15 @@ function summarize(day: WorkoutDayDto): { title: string; sub: string } {
   return { title: "Treino do dia", sub: "Força / mobilidade" };
 }
 
-export function HomeScreen() {
+export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   const { user } = useAuth();
   const { navigate } = useNav();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   function load() {
     setLoading(true);
@@ -59,7 +57,11 @@ export function HomeScreen() {
         setDays(cal);
         setStats(st);
       })
-      .catch(() => setError(true))
+      .catch((e) => {
+        setError(true);
+        // DEBUG temporário — remover depois de achar a causa do erro no dev client.
+        setErrorDetail(String(e?.message ?? e));
+      })
       .finally(() => setLoading(false));
   }
 
@@ -76,15 +78,15 @@ export function HomeScreen() {
   if (error) {
     return (
       <View style={[styles.container, styles.scroll]}>
-        <LoadError onRetry={load} />
+        <LoadError onRetry={load} detail={errorDetail} />
       </View>
     );
   }
 
-  const today = isoToday();
+  const today = localIsoDate();
   const todayDay = days.find((d) => d.date.slice(0, 10) === today);
   const byDate = new Map(days.map((d) => [d.date.slice(0, 10), d]));
-  const weekDates = currentWeek();
+  const weekDates = currentWeek(weekOffset);
 
   return (
     <View style={styles.container}>
@@ -92,13 +94,13 @@ export function HomeScreen() {
         {/* Cabeçalho */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.avatar}>
+            <Pressable onPress={onOpenProfile} style={styles.avatar}>
               <Text style={styles.avatarText}>
                 {user?.name.charAt(0).toUpperCase() ?? "?"}
               </Text>
-            </View>
+            </Pressable>
             <View>
-              <Text style={text.muted}>Bom dia,</Text>
+              <Text style={text.muted}>{greeting()},</Text>
               <Text style={text.cardTitle}>{user?.name ?? ""}</Text>
             </View>
           </View>
@@ -108,7 +110,22 @@ export function HomeScreen() {
         </View>
 
         {/* Sua semana */}
-        <Text style={[text.overline, styles.section]}>SUA SEMANA</Text>
+        <View style={styles.weekHeader}>
+          <Text style={[text.overline, styles.section]}>SUA SEMANA</Text>
+          <View style={styles.weekNav}>
+            <Pressable onPress={() => setWeekOffset((w) => w - 1)} style={styles.weekNavBtn}>
+              <Text style={styles.weekNavText}>‹</Text>
+            </Pressable>
+            {weekOffset !== 0 && (
+              <Pressable onPress={() => setWeekOffset(0)} style={styles.weekNavBtn}>
+                <Text style={styles.weekNavToday}>hoje</Text>
+              </Pressable>
+            )}
+            <Pressable onPress={() => setWeekOffset((w) => w + 1)} style={styles.weekNavBtn}>
+              <Text style={styles.weekNavText}>›</Text>
+            </Pressable>
+          </View>
+        </View>
         <View style={styles.week}>
           {weekDates.map((iso) => {
             const d = byDate.get(iso);
@@ -145,6 +162,16 @@ export function HomeScreen() {
               <Text style={styles.heroSub}>{summarize(todayDay).sub}</Text>
             </LinearGradient>
           </Pressable>
+        ) : days.length === 0 && stats?.lastWorkoutDate && localIsoDate(new Date(stats.lastWorkoutDate)) === today ? (
+          <View style={[styles.card, styles.restCard]}>
+            <Text style={text.secondary}>✓ Treino de hoje já registrado. Bom trabalho!</Text>
+            <Pressable
+              onPress={() => navigate({ name: "logWorkout" })}
+              style={styles.logWorkoutBtn}
+            >
+              <Text style={styles.logWorkoutText}>Registrar outro treino</Text>
+            </Pressable>
+          </View>
         ) : days.length === 0 ? (
           <View style={[styles.card, styles.restCard]}>
             <Text style={text.secondary}>
@@ -187,15 +214,14 @@ export function HomeScreen() {
   );
 }
 
-function currentWeek(): string[] {
+/** Datas (segunda a domingo) da semana atual + `weekOffset` semanas, no fuso local. */
+function currentWeek(weekOffset = 0): string[] {
   const now = new Date();
-  const utc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const day = (utc.getUTCDay() + 6) % 7; // segunda = 0
-  utc.setUTCDate(utc.getUTCDate() - day);
+  const dow = (now.getDay() + 6) % 7; // segunda = 0
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow + weekOffset * 7);
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(utc);
-    d.setUTCDate(utc.getUTCDate() + i);
-    return d.toISOString().slice(0, 10);
+    const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+    return localIsoDate(d);
   });
 }
 
@@ -233,6 +259,15 @@ const styles = StyleSheet.create({
   },
   streakText: { fontFamily: font.semibold, fontSize: 13, color: color.orange400 },
   section: { marginBottom: 8 },
+  weekHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  weekNav: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 8 },
+  weekNavBtn: { paddingHorizontal: 8, paddingVertical: 2 },
+  weekNavText: { fontFamily: font.semibold, fontSize: 16, color: color.textSecondary },
+  weekNavToday: { fontFamily: font.medium, fontSize: 11, color: color.orange400 },
   week: { flexDirection: "row", gap: 5, marginBottom: 14 },
   dayCell: {
     flex: 1,

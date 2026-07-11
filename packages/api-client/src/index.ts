@@ -247,11 +247,18 @@ export class RunUpClient {
     // Só declara JSON quando há corpo — evita o 400 de "empty JSON body".
     if (body !== undefined) headers["Content-Type"] = "application/json";
 
-    const res = await fetch(`${this.options.baseUrl}${path}`, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${this.options.baseUrl}${path}`, {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    } catch (e) {
+      // DEBUG temporário — remover depois de achar a causa do erro no dev client.
+      console.error("[RunUpClient] fetch falhou:", this.options.baseUrl, path, e);
+      throw e;
+    }
 
     if (res.status === 204) return undefined as T;
 

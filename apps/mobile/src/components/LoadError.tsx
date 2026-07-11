@@ -3,10 +3,12 @@ import { color, border } from "@runup/ui/tokens";
 import { text, font } from "../theme.js";
 
 /** Estado de erro ao carregar dados de uma tela, com botão de tentar de novo. */
-export function LoadError({ onRetry }: { onRetry: () => void }) {
+export function LoadError({ onRetry, detail }: { onRetry: () => void; detail?: string }) {
   return (
     <View style={styles.wrap}>
       <Text style={text.secondary}>Não foi possível carregar. Verifique sua conexão.</Text>
+      {/* DEBUG temporário — remover depois de achar a causa do erro no dev client. */}
+      {detail && <Text style={styles.detail}>{detail}</Text>}
       <Pressable onPress={onRetry} style={styles.btn}>
         <Text style={styles.btnText}>Tentar de novo</Text>
       </Pressable>
@@ -31,4 +33,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   btnText: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
+  detail: { fontFamily: font.regular, fontSize: 11, color: color.danger },
 });

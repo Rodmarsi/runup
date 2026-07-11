@@ -22,6 +22,21 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+/**
+ * O RunUp mobile é só para alunos (o treinador usa a web). Se o e-mail já
+ * tiver uma conta de treinador (ex.: mesma conta Google usada na web), o
+ * login funcionaria mas toda tela do app quebraria com 403 — em vez disso,
+ * barramos aqui com uma mensagem clara.
+ */
+function assertStudent(user: AuthUser): AuthUser {
+  if (user.role !== "student") {
+    throw new Error(
+      "Essa conta é de treinador. O app RunUp mobile é só para alunos — use o painel do treinador pelo navegador.",
+    );
+  }
+  return user;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,8 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     api
       .me()
-      .then(setUser)
-      .catch(() => setUser(null))
+      .then((u) => setUser(assertStudent(u)))
+      .catch(() => {
+        setUser(null);
+        api.logout().catch(() => {});
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -41,7 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       login: async (email, password) => {
         const result = await api.login(email, password);
-        setUser(result.user);
+        try {
+          setUser(assertStudent(result.user));
+        } catch (e) {
+          await api.logout();
+          throw e;
+        }
       },
       register: async (name, email, password) => {
         const result = await api.register({ name, email, password, role: "student" });
@@ -63,7 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           decodeURIComponent(token),
           pairs.refresh_token ? decodeURIComponent(pairs.refresh_token) : undefined,
         );
-        setUser(await api.me());
+        try {
+          setUser(assertStudent(await api.me()));
+        } catch (e) {
+          await api.logout();
+          throw e;
+        }
       },
       logout: async () => {
         await api.logout();

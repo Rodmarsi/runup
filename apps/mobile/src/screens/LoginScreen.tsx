@@ -36,7 +36,7 @@ export function LoginScreen() {
       }
     } catch (e) {
       setError(
-        e instanceof ApiError
+        e instanceof ApiError || (e instanceof Error && e.message)
           ? e.message
           : mode === "login"
             ? "Não foi possível entrar"
@@ -52,8 +52,12 @@ export function LoginScreen() {
     setError(null);
     try {
       await loginWithGoogle();
-    } catch {
-      setError("Não foi possível entrar com o Google");
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message
+          ? e.message
+          : "Não foi possível entrar com o Google",
+      );
     } finally {
       setBusy(false);
     }

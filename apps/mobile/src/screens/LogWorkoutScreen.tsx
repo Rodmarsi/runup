@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { color, border } from "@runup/ui/tokens";
@@ -46,7 +47,9 @@ export function LogWorkoutScreen() {
         pain: pain && pain !== "Nenhuma" ? pain : undefined,
         notes: notes.trim() || undefined,
       });
-      goHome();
+      Alert.alert("Treino registrado!", "Seu treino foi salvo com sucesso.", [
+        { text: "OK", onPress: goHome },
+      ]);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Não foi possível salvar");
     } finally {

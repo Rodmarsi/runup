@@ -53,6 +53,8 @@ export interface Stats {
   monthlyDistanceMeters: number;
   streakDays: number;
   avgPaceSecPerKm: number | null;
+  /** Data/hora (ISO) do treino registrado mais recente, se houver. */
+  lastWorkoutDate: string | null;
 }
 
 export interface GoalOverview {

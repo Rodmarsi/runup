@@ -7,10 +7,7 @@ import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { DayRow } from "../components/DayRow.js";
 import { LoadError } from "../components/LoadError.js";
-
-function isoToday() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { localIsoDate } from "../format.js";
 
 export function TreinosScreen() {
   const { navigate } = useNav();
@@ -46,7 +43,7 @@ export function TreinosScreen() {
     );
   }
 
-  const today = isoToday();
+  const today = localIsoDate();
   const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
   const upcoming = sorted.filter((d) => d.date.slice(0, 10) >= today);
   const past = sorted.filter((d) => d.date.slice(0, 10) < today).reverse();

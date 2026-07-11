@@ -12,6 +12,8 @@ export interface Stats {
   monthlyDistanceMeters: number;
   streakDays: number;
   avgPaceSecPerKm: number | null;
+  /** Data (YYYY-MM-DD) do treino registrado mais recente, se houver. */
+  lastWorkoutDate: string | null;
 }
 
 export class ProfileService {
@@ -88,6 +90,10 @@ export class ProfileService {
     const totalTime = totals._sum.durationSeconds ?? 0;
     const avgPace =
       totalDistance > 0 ? Math.round(totalTime / (totalDistance / 1000)) : null;
+    const lastWorkout = logDates.reduce<Date | null>(
+      (latest, l) => (!latest || l.completedAt > latest ? l.completedAt : latest),
+      null,
+    );
 
     return {
       totalDistanceMeters: totalDistance,
@@ -100,6 +106,7 @@ export class ProfileService {
         now,
       ),
       avgPaceSecPerKm: avgPace,
+      lastWorkoutDate: lastWorkout ? lastWorkout.toISOString() : null,
     };
   }
 }
