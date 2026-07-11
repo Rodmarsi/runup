@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { color, border } from "@runup/ui/tokens";
 import { font } from "../theme.js";
-import type { WorkoutDayDto } from "@runup/api-client";
+import type { WorkoutDayDto, RaceDto } from "@runup/api-client";
 import { text } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
@@ -31,6 +31,7 @@ function monthGrid(year: number, month: number): (Date | null)[] {
 export function PlanoScreen() {
   const { navigate } = useNav();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
+  const [races, setRaces] = useState<RaceDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -38,9 +39,11 @@ export function PlanoScreen() {
   function load() {
     setLoading(true);
     setError(false);
-    api
-      .calendar()
-      .then(setDays)
+    Promise.all([api.calendar(), api.races()])
+      .then(([cal, rc]) => {
+        setDays(cal);
+        setRaces(rc);
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }
@@ -69,6 +72,7 @@ export function PlanoScreen() {
   const year = shown.getFullYear();
   const month = shown.getMonth();
   const byDate = new Map(days.map((d) => [d.date.slice(0, 10), d]));
+  const raceDates = new Set(races.map((r) => r.raceDate.slice(0, 10)));
   const grid = monthGrid(year, month);
 
   const monthDays = [...days]
@@ -124,7 +128,7 @@ export function PlanoScreen() {
               <Text style={[styles.cellText, isToday && styles.cellTextToday]}>
                 {date.getDate()}
               </Text>
-              <DayDots day={d} />
+              <DayDots day={d} hasRace={raceDates.has(iso)} />
             </Pressable>
           );
         })}

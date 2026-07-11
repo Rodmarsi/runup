@@ -305,6 +305,49 @@ export interface AiPlanPreview {
   summary: { weeks: number; days: number };
 }
 
+export type RaceStatus = "interested" | "registered" | "completed";
+
+export interface RaceDto {
+  id: string;
+  studentId: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  raceDate: string;
+  startTime: string | null;
+  distanceMeters: number | null;
+  targetTimeSeconds: number | null;
+  courseUrl: string | null;
+  registrationUrl: string | null;
+  status: RaceStatus;
+  createdAt: string;
+}
+
+export interface CreateRaceInput {
+  name: string;
+  city?: string;
+  state?: string;
+  raceDate: string;
+  startTime?: string;
+  distanceMeters?: number;
+  targetTimeSeconds?: number;
+  courseUrl?: string;
+  registrationUrl?: string;
+}
+
+export interface UpdateRaceInput {
+  name?: string;
+  city?: string;
+  state?: string;
+  raceDate?: string;
+  startTime?: string;
+  distanceMeters?: number;
+  targetTimeSeconds?: number;
+  courseUrl?: string;
+  registrationUrl?: string;
+  status?: RaceStatus;
+}
+
 /** Erro padronizado da API: { code, message, details }. */
 export class ApiError extends Error {
   constructor(

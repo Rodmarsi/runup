@@ -29,6 +29,8 @@ import { ActivityDetailScreen } from "./src/screens/ActivityDetailScreen.js";
 import { AnalisesScreen } from "./src/screens/AnalisesScreen.js";
 import { CreateWorkoutScreen } from "./src/screens/CreateWorkoutScreen.js";
 import { AiPlanWizardScreen } from "./src/screens/AiPlanWizardScreen.js";
+import { RacesScreen } from "./src/screens/RacesScreen.js";
+import { RaceDetailScreen } from "./src/screens/RaceDetailScreen.js";
 
 function Router() {
   const { route } = useNav();
@@ -56,7 +58,11 @@ function Router() {
     case "createWorkout":
       return <CreateWorkoutScreen />;
     case "aiPlanWizard":
-      return <AiPlanWizardScreen />;
+      return <AiPlanWizardScreen prefill={route.prefill} />;
+    case "races":
+      return <RacesScreen />;
+    case "raceDetail":
+      return <RaceDetailScreen race={route.race} />;
     default:
       return <MainTabs />;
   }

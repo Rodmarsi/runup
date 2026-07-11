@@ -31,6 +31,9 @@ import {
   type CreateSelfPlanInput,
   type GeneratePlanInput,
   type AiPlanPreview,
+  type RaceDto,
+  type CreateRaceInput,
+  type UpdateRaceInput,
 } from "./types.js";
 
 export * from "./types.js";
@@ -289,6 +292,23 @@ export class RunUpClient {
 
   generateAiPlan(input: GeneratePlanInput): Promise<AiPlanPreview> {
     return this.request<AiPlanPreview>("POST", "/me/plans/ai-generate", input);
+  }
+
+  // --- Provas ---
+  races(): Promise<RaceDto[]> {
+    return this.request<RaceDto[]>("GET", "/me/races");
+  }
+
+  createRace(input: CreateRaceInput): Promise<RaceDto> {
+    return this.request<RaceDto>("POST", "/me/races", input);
+  }
+
+  updateRace(id: string, input: UpdateRaceInput): Promise<RaceDto> {
+    return this.request<RaceDto>("PATCH", `/me/races/${id}`, input);
+  }
+
+  deleteRace(id: string) {
+    return this.request("DELETE", `/me/races/${id}`);
   }
 
   private async request<T = unknown>(

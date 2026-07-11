@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { color, border } from "@runup/ui/tokens";
-import type { WorkoutDayDto, Stats } from "@runup/api-client";
+import type { WorkoutDayDto, Stats, RaceDto } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { useAuth } from "../auth.js";
 import { useNav } from "../nav.js";
@@ -53,6 +53,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   const { units } = useSettings();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [races, setRaces] = useState<RaceDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [errorDetail, setErrorDetail] = useState<string | undefined>(undefined);
@@ -62,10 +63,11 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   function load() {
     setLoading(true);
     setError(false);
-    Promise.all([api.calendar(), api.stats()])
-      .then(([cal, st]) => {
+    Promise.all([api.calendar(), api.stats(), api.races()])
+      .then(([cal, st, rc]) => {
         setDays(cal);
         setStats(st);
+        setRaces(rc);
       })
       .catch((e) => {
         setError(true);
@@ -96,6 +98,16 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   const today = localIsoDate();
   const todayDay = days.find((d) => d.date.slice(0, 10) === today);
   const byDate = new Map(days.map((d) => [d.date.slice(0, 10), d]));
+  const raceDates = new Set(races.map((r) => r.raceDate.slice(0, 10)));
+  const nextRace = races
+    .filter((r) => r.raceDate.slice(0, 10) >= today)
+    .sort((a, b) => a.raceDate.localeCompare(b.raceDate))[0];
+  const daysUntilRace = nextRace
+    ? Math.round(
+        (new Date(nextRace.raceDate.slice(0, 10)).getTime() - new Date(today).getTime()) /
+          86400000,
+      )
+    : null;
   const weekDates = currentWeek(weekOffset);
   const selectedDay = byDate.get(selectedDate);
   const selectedDateLabel =
@@ -161,7 +173,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
                 <Text style={[styles.dayNum, isToday && styles.dayTextToday]}>
                   {iso.slice(8, 10)}
                 </Text>
-                <DayDots day={d} />
+                <DayDots day={d} hasRace={raceDates.has(iso)} />
               </Pressable>
             );
           })}
@@ -242,6 +254,19 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
             </Text>
           </View>
         </View>
+
+        {nextRace && (
+          <Pressable
+            onPress={() => navigate({ name: "raceDetail", race: nextRace })}
+            style={[styles.card, styles.raceCard]}
+          >
+            <Text style={[text.overline, styles.raceLabel]}>PRÓXIMA PROVA</Text>
+            <Text style={styles.raceName}>{nextRace.name}</Text>
+            <Text style={styles.raceCountdown}>
+              Faltam <Text style={styles.raceCountdownNum}>{daysUntilRace}</Text> dias
+            </Text>
+          </Pressable>
+        )}
       </ScrollView>
     </View>
   );
@@ -349,4 +374,9 @@ const styles = StyleSheet.create({
   },
   metricValue: { fontFamily: font.bold, fontSize: 20, color: color.textPrimary, marginTop: 6 },
   metricUnit: { fontFamily: font.medium, fontSize: 11, color: color.textMuted },
+  raceCard: { marginTop: 12, marginBottom: 0 },
+  raceLabel: { marginBottom: 6 },
+  raceName: { fontFamily: font.bold, fontSize: 15, color: color.textPrimary, marginBottom: 4 },
+  raceCountdown: { fontFamily: font.regular, fontSize: 12, color: color.textSecondary },
+  raceCountdownNum: { fontFamily: font.bold, color: color.orange400 },
 });

@@ -15,7 +15,7 @@ import type { AiPlanPreview, ExperienceLevel } from "@runup/api-client";
 import type { RaceDistance } from "@runup/types";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
-import { useNav } from "../nav.js";
+import { useNav, type AiPlanPrefill } from "../nav.js";
 import { localIsoDate } from "../format.js";
 
 const RACE_LABEL: Record<RaceDistance, string> = {
@@ -43,13 +43,13 @@ function parsePace(text: string): number | undefined {
 type Step = 0 | 1 | 2 | 3;
 
 /** Fluxo conversacional "Criar com IA": responde um questionário → recebe um plano completo. */
-export function AiPlanWizardScreen() {
+export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
   const { goHome } = useNav();
   const [step, setStep] = useState<Step>(0);
 
-  const [objective, setObjective] = useState("");
-  const [targetRace, setTargetRace] = useState<RaceDistance | undefined>(undefined);
-  const [raceDate, setRaceDate] = useState("");
+  const [objective, setObjective] = useState(prefill?.objective ?? "");
+  const [targetRace, setTargetRace] = useState<RaceDistance | undefined>(prefill?.targetRace);
+  const [raceDate, setRaceDate] = useState(prefill?.raceDate ?? "");
 
   const [experience, setExperience] = useState<ExperienceLevel>("beginner");
   const [bestPace, setBestPace] = useState("");

@@ -1,4 +1,4 @@
-import { View, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { color } from "@runup/ui/tokens";
 import type { WorkoutDayDto } from "@runup/api-client";
 
@@ -12,11 +12,12 @@ function statusColor(status: WorkoutDayDto["status"]): string {
 }
 
 /**
- * Bolinhas abaixo da data: uma por tipo de treino planejado naquele dia
- * (ex.: corrida + musculação = duas bolinhas), + uma azul se o dia é de
- * recuperação obrigatória.
+ * Indicadores abaixo da data: medalha se há prova no dia, senão uma bolinha
+ * por tipo de treino planejado (ex.: corrida + musculação = duas bolinhas),
+ * + uma azul se o dia é de recuperação obrigatória.
  */
-export function DayDots({ day }: { day?: WorkoutDayDto }) {
+export function DayDots({ day, hasRace }: { day?: WorkoutDayDto; hasRace?: boolean }) {
+  if (hasRace) return <Text style={styles.medal}>🏅</Text>;
   if (!day) return <View style={styles.placeholder} />;
   const kinds = Array.from(new Set(day.blocks.map((b) => b.kind)));
   const dotColor = statusColor(day.status);
@@ -36,4 +37,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 3, marginTop: 2 },
   dot: { width: 6, height: 6, borderRadius: 99 },
   placeholder: { width: 6, height: 6, marginTop: 2 },
+  medal: { fontSize: 10, marginTop: 1 },
 });

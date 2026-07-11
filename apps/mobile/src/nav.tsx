@@ -1,5 +1,13 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import type { WorkoutLogDto } from "@runup/api-client";
+import type { WorkoutLogDto, RaceDto } from "@runup/api-client";
+import type { RaceDistance } from "@runup/types";
+
+/** Preenchimento inicial do wizard de IA a partir de uma prova já cadastrada. */
+export interface AiPlanPrefill {
+  targetRace?: RaceDistance;
+  raceDate?: string;
+  objective?: string;
+}
 
 export type Route =
   | { name: "home" }
@@ -14,7 +22,9 @@ export type Route =
   | { name: "activity"; log: WorkoutLogDto }
   | { name: "analytics" }
   | { name: "createWorkout" }
-  | { name: "aiPlanWizard" };
+  | { name: "aiPlanWizard"; prefill?: AiPlanPrefill }
+  | { name: "races" }
+  | { name: "raceDetail"; race: RaceDto };
 
 interface Nav {
   route: Route;
