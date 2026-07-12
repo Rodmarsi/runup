@@ -346,6 +346,28 @@ export interface RaceDto {
   createdAt: string;
 }
 
+/** Prova encontrada na busca (corridasbr.com.br) — ainda não é do calendário do aluno. */
+export interface ExternalRaceDto {
+  externalId: string;
+  name: string;
+  city: string;
+  state: string;
+  raceDate: string;
+  distancesLabel: string;
+  longestDistanceMeters: number | null;
+}
+
+export interface SearchRacesQuery {
+  state: string;
+  city?: string;
+  minDistanceMeters?: number;
+}
+
+export interface ImportRaceInput {
+  state: string;
+  externalId: string;
+}
+
 export interface CreateRaceInput {
   name: string;
   city?: string;

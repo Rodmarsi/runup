@@ -10,12 +10,18 @@ import {
   Alert,
 } from "react-native";
 import { color, border } from "@runup/ui/tokens";
-import { ApiError, type RaceDto } from "@runup/api-client";
+import { ApiError, type RaceDto, type ExternalRaceDto } from "@runup/api-client";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { localIsoDate } from "../format.js";
+import { localIsoDate, km } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
+
+const STATES = [
+  "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MT",
+  "MS", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
+  "SE", "SP", "TO",
+];
 
 function daysUntil(raceDate: string): number {
   const today = localIsoDate();
@@ -39,6 +45,14 @@ export function RacesScreen() {
   const [state, setState] = useState("");
   const [raceDate, setRaceDate] = useState("");
   const [distanceKm, setDistanceKm] = useState("");
+
+  const [searching, setSearching] = useState(false);
+  const [searchState, setSearchState] = useState<string | null>(null);
+  const [searchCity, setSearchCity] = useState("");
+  const [searchResults, setSearchResults] = useState<ExternalRaceDto[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [importingId, setImportingId] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
@@ -74,11 +88,46 @@ export function RacesScreen() {
       setRaceDate("");
       setDistanceKm("");
       setAdding(false);
+      Alert.alert(
+        "Prova adicionada!",
+        "Se você já tinha treinos agendados, ajustamos automaticamente a carga dos últimos dias antes da prova.",
+      );
       load();
     } catch (e) {
       Alert.alert("Erro", e instanceof ApiError ? e.message : "Não foi possível adicionar a prova");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function runSearch(state: string) {
+    setSearchState(state);
+    setSearchLoading(true);
+    setSearchError(null);
+    try {
+      const results = await api.searchRaces({ state, city: searchCity.trim() || undefined });
+      setSearchResults(results);
+    } catch (e) {
+      setSearchError(e instanceof ApiError ? e.message : "Não foi possível buscar provas agora");
+    } finally {
+      setSearchLoading(false);
+    }
+  }
+
+  async function importResult(result: ExternalRaceDto) {
+    if (!searchState) return;
+    setImportingId(result.externalId);
+    try {
+      await api.importRace({ state: searchState, externalId: result.externalId });
+      Alert.alert(
+        "Prova adicionada!",
+        `${result.name} — se você já tinha treinos agendados, ajustamos a carga dos últimos dias antes da prova.`,
+      );
+      load();
+    } catch (e) {
+      Alert.alert("Erro", e instanceof ApiError ? e.message : "Não foi possível adicionar essa prova");
+    } finally {
+      setImportingId(null);
     }
   }
 
@@ -189,10 +238,78 @@ export function RacesScreen() {
             </Pressable>
           </View>
         </View>
+      ) : searching ? (
+        <View style={styles.addCard}>
+          <View style={styles.searchHeaderRow}>
+            <Text style={[text.overline, styles.searchTitle]}>BUSCAR PROVAS</Text>
+            <Pressable onPress={() => setSearching(false)}>
+              <Text style={styles.cancelBtnText}>fechar</Text>
+            </Pressable>
+          </View>
+          <Text style={[text.muted, styles.searchHint]}>
+            Dados do corridasbr.com.br. Escolha o estado:
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stateRow}>
+            {STATES.map((uf) => (
+              <Pressable
+                key={uf}
+                onPress={() => runSearch(uf)}
+                style={[styles.stateChip, searchState === uf && styles.stateChipActive]}
+              >
+                <Text style={searchState === uf ? styles.stateChipTextActive : styles.stateChipText}>
+                  {uf}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <TextInput
+            style={styles.input}
+            value={searchCity}
+            onChangeText={setSearchCity}
+            onSubmitEditing={() => searchState && runSearch(searchState)}
+            placeholder="Filtrar por cidade (opcional)"
+            placeholderTextColor={color.textFaint}
+          />
+
+          {searchLoading && <ActivityIndicator color={color.orange500} style={{ marginTop: 12 }} />}
+          {searchError && <Text style={styles.searchErrorText}>{searchError}</Text>}
+
+          {!searchLoading &&
+            searchState &&
+            searchResults.map((result) => (
+              <View key={result.externalId} style={styles.resultRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.resultName}>{result.name}</Text>
+                  <Text style={text.muted}>
+                    {result.city} · {result.raceDate.slice(8, 10)}/{result.raceDate.slice(5, 7)}
+                    {result.longestDistanceMeters ? ` · ${km(result.longestDistanceMeters)} km` : ""}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => importResult(result)}
+                  disabled={importingId === result.externalId}
+                  style={styles.importBtn}
+                >
+                  <Text style={styles.importBtnText}>
+                    {importingId === result.externalId ? "..." : "Adicionar"}
+                  </Text>
+                </Pressable>
+              </View>
+            ))}
+
+          {!searchLoading && searchState && searchResults.length === 0 && !searchError && (
+            <Text style={[text.secondary, styles.label]}>Nenhuma prova encontrada.</Text>
+          )}
+        </View>
       ) : (
-        <Pressable onPress={() => setAdding(true)} style={styles.addBtn}>
-          <Text style={styles.addBtnText}>+ Adicionar prova</Text>
-        </Pressable>
+        <View style={styles.addRow}>
+          <Pressable onPress={() => setAdding(true)} style={[styles.addBtn, { flex: 1 }]}>
+            <Text style={styles.addBtnText}>+ Adicionar manual</Text>
+          </Pressable>
+          <Pressable onPress={() => setSearching(true)} style={[styles.addBtn, styles.searchBtn]}>
+            <Text style={styles.searchBtnText}>🔍 Buscar provas</Text>
+          </Pressable>
+        </View>
       )}
     </ScrollView>
   );
@@ -267,4 +384,42 @@ const styles = StyleSheet.create({
     backgroundColor: color.orange500,
   },
   saveBtnText: { fontFamily: font.semibold, fontSize: 13, color: color.ink },
+  searchBtn: { flex: 1, backgroundColor: color.orangeDim, borderColor: color.orange500 },
+  searchBtnText: { fontFamily: font.semibold, fontSize: 13, color: color.orange400 },
+  searchHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  searchTitle: { marginBottom: 0 },
+  searchHint: { fontSize: 12, marginTop: 4, marginBottom: 4 },
+  stateRow: { flexDirection: "row", marginVertical: 4 },
+  stateChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 99,
+    backgroundColor: color.surface1,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    marginRight: 6,
+  },
+  stateChipActive: { backgroundColor: color.orangeDim, borderColor: color.orange500 },
+  stateChipText: { fontFamily: font.medium, fontSize: 12, color: color.textSecondary },
+  stateChipTextActive: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
+  searchErrorText: { fontFamily: font.regular, fontSize: 12, color: color.danger, marginTop: 8 },
+  resultRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: color.surface1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 12,
+    marginTop: 8,
+  },
+  resultName: { fontFamily: font.semibold, fontSize: 13, color: color.textPrimary },
+  importBtn: {
+    backgroundColor: color.orange500,
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  importBtnText: { fontFamily: font.semibold, fontSize: 12, color: color.ink },
 });

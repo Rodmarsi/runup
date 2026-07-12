@@ -1,6 +1,11 @@
-import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
+import { useState } from "react";
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { color, border } from "@runup/ui/tokens";
+import { ApiError } from "@runup/api-client";
 import { text, font } from "../theme.js";
+import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { useSettings } from "../settings.js";
 import type { Units } from "../format.js";
@@ -8,6 +13,25 @@ import type { Units } from "../format.js";
 export function SettingsScreen() {
   const { goHome } = useNav();
   const { units, setUnits } = useSettings();
+  const [exporting, setExporting] = useState(false);
+
+  async function exportData() {
+    setExporting(true);
+    try {
+      const data = await api.exportMyData();
+      const path = `${FileSystem.cacheDirectory}runup-dados.json`;
+      await FileSystem.writeAsStringAsync(path, JSON.stringify(data, null, 2));
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(path, { mimeType: "application/json" });
+      } else {
+        Alert.alert("Dados exportados", `Salvos em: ${path}`);
+      }
+    } catch (e) {
+      Alert.alert("Erro", e instanceof ApiError ? e.message : "Não foi possível exportar seus dados");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
@@ -49,6 +73,31 @@ export function SettingsScreen() {
         <Text style={[text.body, { flex: 1 }]}>Escuro</Text>
         <Text style={text.muted}>identidade do app</Text>
       </View>
+
+      <Text style={[text.overline, styles.label]}>SINCRONIZAÇÃO</Text>
+      <View style={styles.card}>
+        <Text style={[text.body, { flex: 1 }]}>Seus dados ficam salvos no servidor</Text>
+        <Text style={text.muted}>automática</Text>
+      </View>
+      <Text style={[text.muted, styles.hint]}>
+        Como tudo é guardado no servidor (não só no aparelho), entrar em outro celular já
+        mostra os mesmos treinos, provas e estatísticas — não precisa configurar nada.
+      </Text>
+
+      <Text style={[text.overline, styles.label]}>SEUS DADOS</Text>
+      <Pressable onPress={exportData} disabled={exporting} style={styles.card}>
+        <Text style={[text.body, { flex: 1 }]}>Exportar dados</Text>
+        {exporting ? (
+          <ActivityIndicator color={color.orange500} />
+        ) : (
+          <Text style={styles.exportLink}>baixar .json</Text>
+        )}
+      </Pressable>
+      <Text style={[text.muted, styles.hint]}>
+        Gera um arquivo com tudo que você tem cadastrado (perfil, treinos, provas, tênis,
+        recordes) — serve tanto como cópia de segurança quanto pra levar seus dados pra
+        outro lugar.
+      </Text>
     </ScrollView>
   );
 }
@@ -81,4 +130,5 @@ const styles = StyleSheet.create({
   segmentBtnActive: { backgroundColor: color.orangeDim, borderColor: color.orange500 },
   segmentText: { fontFamily: font.medium, fontSize: 12, color: color.textSecondary },
   segmentTextActive: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
+  exportLink: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
 });

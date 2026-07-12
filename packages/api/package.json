@@ -22,6 +22,7 @@
     "@runup/db": "workspace:*",
     "@runup/types": "workspace:*",
     "bcryptjs": "^2.4.3",
+    "cheerio": "^1.2.0",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.0",
     "jsonwebtoken": "^9.0.2",

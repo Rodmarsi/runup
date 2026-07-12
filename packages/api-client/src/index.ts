@@ -40,6 +40,9 @@ import {
   type GamificationSnapshot,
   type Insight,
   type UpdateDayInput,
+  type ExternalRaceDto,
+  type SearchRacesQuery,
+  type ImportRaceInput,
 } from "./types.js";
 
 export * from "./types.js";
@@ -357,6 +360,19 @@ export class RunUpClient {
     return this.request("DELETE", `/me/races/${id}`);
   }
 
+  /** Busca de provas por estado (corridasbr.com.br), com filtro opcional de cidade/distância. */
+  searchRaces(query: SearchRacesQuery): Promise<ExternalRaceDto[]> {
+    const params = new URLSearchParams({ state: query.state });
+    if (query.city) params.set("city", query.city);
+    if (query.minDistanceMeters) params.set("minDistanceMeters", String(query.minDistanceMeters));
+    return this.request<ExternalRaceDto[]>("GET", `/races/search?${params.toString()}`);
+  }
+
+  /** "Adicionar ao meu calendário" — importa uma prova encontrada na busca. */
+  importRace(input: ImportRaceInput): Promise<RaceDto> {
+    return this.request<RaceDto>("POST", "/me/races/import", input);
+  }
+
   // --- Gamificação & insights ---
   gamification(): Promise<GamificationSnapshot> {
     return this.request<GamificationSnapshot>("GET", "/me/gamification");
@@ -368,6 +384,11 @@ export class RunUpClient {
 
   registerPushToken(token: string) {
     return this.request("POST", "/me/push-token", { token });
+  }
+
+  /** Tudo que o aluno tem cadastrado, pra Configurações > Exportar dados. */
+  exportMyData(): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>("GET", "/me/export");
   }
 
   private async request<T = unknown>(

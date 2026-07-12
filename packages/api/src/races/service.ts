@@ -1,9 +1,14 @@
 import type { PrismaClient } from "@runup/db";
 import { errors } from "../errors.js";
+import { PlanRecalculationService } from "../plans/recalculation-service.js";
 import type { CreateRaceInput, UpdateRaceInput } from "./schemas.js";
 
 export class RaceService {
-  constructor(private readonly db: PrismaClient) {}
+  private readonly recalculation: PlanRecalculationService;
+
+  constructor(private readonly db: PrismaClient) {
+    this.recalculation = new PlanRecalculationService(db);
+  }
 
   listRaces(studentId: string) {
     return this.db.race.findMany({
@@ -12,10 +17,13 @@ export class RaceService {
     });
   }
 
-  createRace(studentId: string, input: CreateRaceInput) {
-    return this.db.race.create({
+  async createRace(studentId: string, input: CreateRaceInput) {
+    const race = await this.db.race.create({
       data: { studentId, ...input, raceDate: new Date(input.raceDate) },
     });
+    // Recálculo automático: ajusta o plano já agendado do aluno pra essa prova nova.
+    await this.recalculation.recalculateForRace(studentId, race.raceDate);
+    return race;
   }
 
   private async requireOwnRace(studentId: string, raceId: string) {
@@ -26,10 +34,15 @@ export class RaceService {
 
   async updateRace(studentId: string, raceId: string, input: UpdateRaceInput) {
     await this.requireOwnRace(studentId, raceId);
-    return this.db.race.update({
+    const race = await this.db.race.update({
       where: { id: raceId },
       data: { ...input, raceDate: input.raceDate ? new Date(input.raceDate) : undefined },
     });
+    // Data mudou — recalcula o plano pra nova data.
+    if (input.raceDate) {
+      await this.recalculation.recalculateForRace(studentId, race.raceDate);
+    }
+    return race;
   }
 
   async deleteRace(studentId: string, raceId: string) {

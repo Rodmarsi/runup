@@ -60,4 +60,10 @@ export const errors = {
     new AppError(404, "SHOE_NOT_FOUND", "Tênis não encontrado"),
   raceNotFound: () =>
     new AppError(404, "RACE_NOT_FOUND", "Prova não encontrada"),
+  raceImportFailed: () =>
+    new AppError(
+      502,
+      "RACE_IMPORT_FAILED",
+      "Não foi possível importar os dados desta prova agora — tente de novo em instantes",
+    ),
 } as const;
