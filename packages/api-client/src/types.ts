@@ -41,6 +41,14 @@ export interface WorkoutDayDto {
   mandatoryRecovery: boolean;
 }
 
+export interface CurrentPlanDto {
+  title: string;
+  durationWeeks: number;
+  createdAt: string;
+  madeByCoach: boolean;
+  coachName: string | null;
+}
+
 export interface WorkoutCommentDto {
   id: string;
   authorId: string;
@@ -155,6 +163,20 @@ export interface AthleteProfileInput {
   vo2max?: number;
   experience?: ExperienceLevel;
   weeklyAvailabilityDays?: number;
+}
+
+export interface BodyMetricDto {
+  id: string;
+  studentId: string;
+  date: string;
+  weightKg: number | null;
+  bodyFatPct: number | null;
+}
+
+export interface BodyMetricInput {
+  date: string;
+  weightKg?: number;
+  bodyFatPct?: number;
 }
 
 export interface ShoeDto {

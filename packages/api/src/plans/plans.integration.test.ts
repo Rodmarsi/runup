@@ -116,6 +116,33 @@ describe("criação e atribuição de plano", () => {
     expect(cal.json()).toHaveLength(2);
   });
 
+  it("plano mais recente indica que foi feito pelo treinador", async () => {
+    const { coach, student } = await linkedPair("p1b");
+    await createPlan(coach.token, student.id);
+
+    const res = await app.inject({
+      method: "GET",
+      url: "/me/current-plan",
+      headers: auth(student.token),
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.title).toBe("Plano Meia PoA");
+    expect(body.madeByCoach).toBe(true);
+    expect(body.coachName).toContain("coach-p1b@runup.app");
+  });
+
+  it("aluno sem nenhum plano recebe null em /me/current-plan", async () => {
+    const student = await register("student", "sem-plano@runup.app");
+    const res = await app.inject({
+      method: "GET",
+      url: "/me/current-plan",
+      headers: auth(student.token),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toBeNull();
+  });
+
   it("não cria plano para aluno sem vínculo (403)", async () => {
     const coach = await register("coach", "coach-nl@runup.app");
     const other = await register("student", "aluno-nl@runup.app");

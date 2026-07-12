@@ -6,6 +6,7 @@ import {
   type UpdateMeInput,
   type WorkoutDayDto,
   type WorkoutDayDetailDto,
+  type CurrentPlanDto,
   type Stats,
   type GoalOverview,
   type GoalDto,
@@ -28,6 +29,8 @@ import {
   type ListWorkoutLogsQuery,
   type AthleteProfileDto,
   type AthleteProfileInput,
+  type BodyMetricDto,
+  type BodyMetricInput,
   type ShoeDto,
   type CreateShoeInput,
   type UpdateShoeInput,
@@ -65,6 +68,16 @@ export interface ClientOptions {
 }
 
 const NO_REFRESH_PATHS = ["/auth/login", "/auth/register", "/auth/refresh"];
+
+// Plano free do Render "dorme" o servidor após 15min sem uso: a 1ª conexão
+// depois disso pode falhar de vez (connection refused) enquanto ele acorda
+// (~30-50s), antes de voltar a responder normalmente. Sem isso, o usuário via
+// um "fetch failed" cru na tela em vez do app simplesmente esperar acordar.
+const COLD_START_RETRY_DELAYS_MS = [3000, 8000, 15000];
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /** Cliente HTTP tipado do RunUp, reusável por mobile e web. */
 export class RunUpClient {
@@ -164,6 +177,10 @@ export class RunUpClient {
     return this.request<WorkoutDayDto[]>("GET", "/me/calendar");
   }
 
+  currentPlan(): Promise<CurrentPlanDto | null> {
+    return this.request<CurrentPlanDto | null>("GET", "/me/current-plan");
+  }
+
   workoutDay(id: string): Promise<WorkoutDayDetailDto> {
     return this.request<WorkoutDayDetailDto>("GET", `/workout-days/${id}`);
   }
@@ -206,6 +223,14 @@ export class RunUpClient {
 
   updateAthleteProfile(input: AthleteProfileInput): Promise<AthleteProfileDto> {
     return this.request<AthleteProfileDto>("PUT", "/me/athlete-profile", input);
+  }
+
+  bodyMetrics(): Promise<BodyMetricDto[]> {
+    return this.request<BodyMetricDto[]>("GET", "/me/body-metrics");
+  }
+
+  addBodyMetric(input: BodyMetricInput): Promise<BodyMetricDto> {
+    return this.request<BodyMetricDto>("POST", "/me/body-metrics", input);
   }
 
   // --- Equipamentos ---
@@ -391,6 +416,17 @@ export class RunUpClient {
     return this.request<Record<string, unknown>>("GET", "/me/export");
   }
 
+  private async fetchWithColdStartRetry(path: string, init: RequestInit): Promise<Response> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await fetch(`${this.options.baseUrl}${path}`, init);
+      } catch (e) {
+        if (attempt >= COLD_START_RETRY_DELAYS_MS.length) throw e;
+        await sleep(COLD_START_RETRY_DELAYS_MS[attempt]!);
+      }
+    }
+  }
+
   private async request<T = unknown>(
     method: string,
     path: string,
@@ -405,15 +441,17 @@ export class RunUpClient {
 
     let res: Response;
     try {
-      res = await fetch(`${this.options.baseUrl}${path}`, {
+      res = await this.fetchWithColdStartRetry(path, {
         method,
         headers,
         body: body === undefined ? undefined : JSON.stringify(body),
       });
     } catch (e) {
-      // DEBUG temporário — remover depois de achar a causa do erro no dev client.
-      console.error("[RunUpClient] fetch falhou:", this.options.baseUrl, path, e);
-      throw e;
+      throw new ApiError(
+        0,
+        "NETWORK_ERROR",
+        "Não foi possível conectar ao servidor — verifique sua internet e tente de novo",
+      );
     }
 
     if (res.status === 204) return undefined as T;

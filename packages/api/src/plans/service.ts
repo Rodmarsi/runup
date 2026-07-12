@@ -163,6 +163,26 @@ export class PlanService {
     });
   }
 
+  /** Plano mais recente do aluno, com quem o criou (treinador ou o próprio aluno). */
+  async currentPlanForStudent(studentId: string) {
+    const assignment = await this.db.planAssignment.findFirst({
+      where: { studentId },
+      orderBy: { plan: { createdAt: "desc" } },
+      include: { plan: { include: { owner: true } } },
+    });
+    if (!assignment) return null;
+
+    const { plan } = assignment;
+    const madeByCoach = plan.ownerId !== studentId;
+    return {
+      title: plan.title,
+      durationWeeks: plan.durationWeeks,
+      createdAt: plan.createdAt,
+      madeByCoach,
+      coachName: madeByCoach ? plan.owner.name : null,
+    };
+  }
+
   /**
    * Lê um dia de treino, garantindo acesso: o aluno dono ou o treinador
    * vinculado a ele.

@@ -16,6 +16,7 @@ import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { localIsoDate, km } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
+import { DateField } from "../components/DateField.js";
 
 const STATES = [
   "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MT",
@@ -214,13 +215,7 @@ export function RacesScreen() {
               autoCapitalize="characters"
             />
           </View>
-          <TextInput
-            style={styles.input}
-            value={raceDate}
-            onChangeText={setRaceDate}
-            placeholder="Data (AAAA-MM-DD)"
-            placeholderTextColor={color.textFaint}
-          />
+          <DateField value={raceDate} onChange={setRaceDate} placeholder="Data da prova" />
           <TextInput
             style={styles.input}
             value={distanceKm}

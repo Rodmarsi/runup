@@ -10,11 +10,13 @@ import {
   Alert,
 } from "react-native";
 import { color, border } from "@runup/ui/tokens";
-import type { AthleteProfileDto, Sex, ExperienceLevel } from "@runup/api-client";
+import { ApiError, type AthleteProfileDto, type BodyMetricDto, type Sex, type ExperienceLevel } from "@runup/api-client";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { LoadError } from "../components/LoadError.js";
+import { DateField } from "../components/DateField.js";
+import { localIsoDate, isoToBr } from "../format.js";
 
 const SEX_LABEL: Record<Sex, string> = {
   male: "Masculino",
@@ -42,6 +44,12 @@ export function BodyInfoScreen() {
   const [experience, setExperience] = useState<ExperienceLevel | undefined>(undefined);
   const [weeklyAvailabilityDays, setWeeklyAvailabilityDays] = useState("");
 
+  const [metrics, setMetrics] = useState<BodyMetricDto[]>([]);
+  const [metricDate, setMetricDate] = useState(localIsoDate());
+  const [metricWeight, setMetricWeight] = useState("");
+  const [metricBodyFat, setMetricBodyFat] = useState("");
+  const [savingMetric, setSavingMetric] = useState(false);
+
   function fill(p: AthleteProfileDto) {
     setHeightCm(p.heightCm ? String(p.heightCm) : "");
     setBirthDate(p.birthDate ? p.birthDate.slice(0, 10) : "");
@@ -57,14 +65,38 @@ export function BodyInfoScreen() {
   function load() {
     setLoading(true);
     setError(false);
-    api
-      .athleteProfile()
-      .then(fill)
+    Promise.all([api.athleteProfile(), api.bodyMetrics()])
+      .then(([profile, bodyMetrics]) => {
+        fill(profile);
+        setMetrics(bodyMetrics);
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }
 
   useEffect(load, []);
+
+  async function addMetric() {
+    if (!metricWeight && !metricBodyFat) {
+      Alert.alert("Preencha ao menos o peso ou o percentual de gordura.");
+      return;
+    }
+    setSavingMetric(true);
+    try {
+      const m = await api.addBodyMetric({
+        date: metricDate,
+        weightKg: metricWeight ? Number(metricWeight.replace(",", ".")) : undefined,
+        bodyFatPct: metricBodyFat ? Number(metricBodyFat.replace(",", ".")) : undefined,
+      });
+      setMetrics((prev) => [m, ...prev]);
+      setMetricWeight("");
+      setMetricBodyFat("");
+    } catch (e) {
+      Alert.alert("Erro", e instanceof ApiError ? e.message : "Não foi possível salvar a medida");
+    } finally {
+      setSavingMetric(false);
+    }
+  }
 
   async function save() {
     setSaving(true);
@@ -126,14 +158,8 @@ export function BodyInfoScreen() {
         />
       </Field>
 
-      <Field label="Data de nascimento (AAAA-MM-DD)">
-        <TextInput
-          style={styles.input}
-          value={birthDate}
-          onChangeText={setBirthDate}
-          placeholder="ex.: 1994-03-20"
-          placeholderTextColor={color.textFaint}
-        />
+      <Field label="Data de nascimento">
+        <DateField value={birthDate} onChange={setBirthDate} maximumDate={new Date()} />
       </Field>
 
       <Field label="Sexo">
@@ -204,6 +230,48 @@ export function BodyInfoScreen() {
       <Pressable onPress={save} disabled={saving} style={styles.saveBtn}>
         <Text style={styles.saveBtnText}>{saving ? "Salvando..." : "Salvar"}</Text>
       </Pressable>
+
+      <Text style={[text.overline, styles.sectionLabel]}>MEDIDAS CORPORAIS</Text>
+      <View style={styles.metricForm}>
+        <DateField value={metricDate} onChange={setMetricDate} maximumDate={new Date()} />
+        <View style={styles.row2}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            value={metricWeight}
+            onChangeText={setMetricWeight}
+            keyboardType="decimal-pad"
+            placeholder="Peso (kg)"
+            placeholderTextColor={color.textFaint}
+          />
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            value={metricBodyFat}
+            onChangeText={setMetricBodyFat}
+            keyboardType="decimal-pad"
+            placeholder="% gordura"
+            placeholderTextColor={color.textFaint}
+          />
+        </View>
+        <Pressable onPress={addMetric} disabled={savingMetric} style={styles.addMetricBtn}>
+          <Text style={styles.addMetricBtnText}>
+            {savingMetric ? "Salvando..." : "Registrar medida"}
+          </Text>
+        </Pressable>
+      </View>
+
+      {metrics.length > 0 && (
+        <View style={styles.metricList}>
+          {metrics.map((m) => (
+            <View key={m.id} style={styles.metricRow}>
+              <Text style={styles.metricDate}>{isoToBr(m.date.slice(0, 10))}</Text>
+              <Text style={[text.body, { flex: 1 }]}>
+                {m.weightKg != null ? `${m.weightKg} kg` : "—"}
+                {m.bodyFatPct != null ? ` · ${m.bodyFatPct}% gordura` : ""}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -256,4 +324,33 @@ const styles = StyleSheet.create({
     backgroundColor: color.orange500,
   },
   saveBtnText: { fontFamily: font.semibold, fontSize: 14, color: color.ink },
+  sectionLabel: { marginTop: 32, marginBottom: 8 },
+  row2: { flexDirection: "row", gap: 8 },
+  metricForm: {
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 14,
+    gap: 10,
+  },
+  addMetricBtn: {
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 99,
+    backgroundColor: color.orangeDim,
+  },
+  addMetricBtnText: { fontFamily: font.semibold, fontSize: 13, color: color.orange400 },
+  metricList: { marginTop: 12, gap: 6 },
+  metricRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: color.surface1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 10,
+  },
+  metricDate: { fontFamily: font.semibold, fontSize: 12, color: color.orange400, width: 70 },
 });

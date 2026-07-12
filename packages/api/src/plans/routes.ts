@@ -45,6 +45,11 @@ export function planRoutes(db: PrismaClient) {
       return plans.calendarForStudent(request.authUser!.id);
     });
 
+    // Plano mais recente do aluno (pra mostrar quem criou na tela de Plano).
+    app.get("/me/current-plan", asStudent, async (request) => {
+      return plans.currentPlanForStudent(request.authUser!.id);
+    });
+
     // Detalhe de um dia (aluno dono ou treinador vinculado).
     app.get("/workout-days/:id", authed, async (request) => {
       const { id } = request.params as { id: string };

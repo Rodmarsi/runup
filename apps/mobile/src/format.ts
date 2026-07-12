@@ -10,6 +10,17 @@ export function localIsoDate(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+/** "2026-07-12" → "12/07/2026", pro padrão que o aluno brasileiro espera. */
+export function isoToBr(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+/** Date local (sem UTC) → "2026-07-12", pro valor que sai do date picker. */
+export function dateToIso(d: Date): string {
+  return localIsoDate(d);
+}
+
 /** Saudação de acordo com o horário local do aparelho. */
 export function greeting(d: Date = new Date()): string {
   const h = d.getHours();

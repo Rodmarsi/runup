@@ -17,6 +17,7 @@ import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav, type AiPlanPrefill } from "../nav.js";
 import { localIsoDate } from "../format.js";
+import { DateField } from "../components/DateField.js";
 
 const RACE_LABEL: Record<RaceDistance, string> = {
   "5k": "5 km",
@@ -154,12 +155,12 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
               ))}
             </View>
             {targetRace && (
-              <TextInput
-                style={[styles.input, { marginTop: 8 }]}
+              <DateField
                 value={raceDate}
-                onChangeText={setRaceDate}
-                placeholder="Data da prova (AAAA-MM-DD)"
-                placeholderTextColor={color.textMuted}
+                onChange={setRaceDate}
+                placeholder="Data da prova"
+                minimumDate={new Date()}
+                style={{ marginTop: 8 }}
               />
             )}
           </>

@@ -12,7 +12,13 @@ import {
 import { color, border } from "@runup/ui/tokens";
 import { font } from "../theme.js";
 import { ApiError } from "@runup/api-client";
-import type { WorkoutDayDto, RaceDto, ConversationDto, StudentInviteDto } from "@runup/api-client";
+import type {
+  WorkoutDayDto,
+  RaceDto,
+  ConversationDto,
+  StudentInviteDto,
+  CurrentPlanDto,
+} from "@runup/api-client";
 import { text } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
@@ -44,6 +50,7 @@ export function PlanoScreen() {
   const [races, setRaces] = useState<RaceDto[]>([]);
   const [conversations, setConversations] = useState<ConversationDto[]>([]);
   const [pendingInvites, setPendingInvites] = useState<StudentInviteDto[]>([]);
+  const [currentPlan, setCurrentPlan] = useState<CurrentPlanDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -55,12 +62,19 @@ export function PlanoScreen() {
   function load() {
     setLoading(true);
     setError(false);
-    Promise.all([api.calendar(), api.races(), api.conversations(), api.studentInvites()])
-      .then(([cal, rc, conv, invites]) => {
+    Promise.all([
+      api.calendar(),
+      api.races(),
+      api.conversations(),
+      api.studentInvites(),
+      api.currentPlan(),
+    ])
+      .then(([cal, rc, conv, invites, plan]) => {
         setDays(cal);
         setRaces(rc);
         setConversations(conv);
         setPendingInvites(invites);
+        setCurrentPlan(plan);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -147,7 +161,18 @@ export function PlanoScreen() {
             </View>
           ))}
         </View>
-      ) : conversations.length > 0 ? null : invitingCoach ? (
+      ) : conversations.length > 0 ? (
+        <View style={styles.coachCard}>
+          <Text style={[text.overline, styles.coachLabel]}>SEU TREINADOR</Text>
+          <Text style={text.body}>{conversations[0]!.with.name}</Text>
+          {currentPlan && (
+            <Text style={[text.secondary, styles.currentPlanText]}>
+              Último plano: {currentPlan.title} · {currentPlan.durationWeeks} semanas
+              {currentPlan.madeByCoach ? "" : " (criado por você)"}
+            </Text>
+          )}
+        </View>
+      ) : invitingCoach ? (
         <View style={styles.coachCard}>
           <Text style={[text.overline, styles.coachLabel]}>CONVIDAR TREINADOR</Text>
           <TextInput
@@ -259,6 +284,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   coachLabel: { marginBottom: 8 },
+  currentPlanText: { marginTop: 6 },
   inviteRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   input: {
     backgroundColor: color.surface1,
