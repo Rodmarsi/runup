@@ -6,11 +6,13 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import * as WebBrowser from "expo-web-browser";
 import { color, border } from "@runup/ui/tokens";
 import type { Block, BlockItem } from "@runup/types";
-import type { WorkoutDayDetailDto, WorkoutDayDto } from "@runup/api-client";
+import { ApiError, type WorkoutDayDetailDto, type WorkoutDayDto } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
@@ -75,6 +77,7 @@ export function DayDetailScreen({ date }: { date: string }) {
   const [detail, setDetail] = useState<WorkoutDayDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   // Carrega o calendário uma vez, pra saber quais dias têm treino.
   function loadCalendar() {
@@ -100,6 +103,24 @@ export function DayDetailScreen({ date }: { date: string }) {
     api.workoutDay(matching.id).then(setDetail).catch(() => setDetail(null));
   }, [matching?.id]);
 
+  async function syncStrava() {
+    setSyncing(true);
+    try {
+      const status = await api.stravaStatus();
+      if (!status.connected) {
+        const { url } = await api.stravaAuthorizeUrl();
+        await WebBrowser.openBrowserAsync(url);
+      } else {
+        await api.stravaSync();
+      }
+      if (matching) api.workoutDay(matching.id).then(setDetail).catch(() => {});
+    } catch (e) {
+      Alert.alert("Erro", e instanceof ApiError ? e.message : "Não foi possível sincronizar com o Strava");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -124,8 +145,7 @@ export function DayDetailScreen({ date }: { date: string }) {
         (a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role),
       )
     : [];
-  const mainItem = blocks.find((b) => b.role === "main")?.items[0];
-  const liveTitle = mainItem ? describeItem(mainItem) : "Treino do dia";
+  const isPending = matching?.status === "pending";
 
   return (
     <View style={styles.container}>
@@ -216,10 +236,10 @@ export function DayDetailScreen({ date }: { date: string }) {
         )}
       </ScrollView>
 
-      {matching && (
+      {matching && isPending && (
         <View style={styles.footer}>
           <Pressable
-            onPress={() => navigate({ name: "liveWorkout", dayId: matching.id, title: liveTitle })}
+            onPress={() => navigate({ name: "checkin", dayId: matching.id })}
             style={styles.cta}
           >
             <LinearGradient
@@ -228,8 +248,15 @@ export function DayDetailScreen({ date }: { date: string }) {
               end={{ x: 1, y: 1 }}
               style={styles.ctaGradient}
             >
-              <Text style={styles.ctaText}>Iniciar treino</Text>
+              <Text style={styles.ctaText}>Registrar atividade</Text>
             </LinearGradient>
+          </Pressable>
+          <Pressable onPress={syncStrava} disabled={syncing} style={styles.secondaryCta}>
+            {syncing ? (
+              <ActivityIndicator color={color.textSecondary} />
+            ) : (
+              <Text style={styles.secondaryCtaText}>Sincronizar com Strava</Text>
+            )}
           </Pressable>
         </View>
       )}
@@ -277,8 +304,16 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 8,
   },
-  footer: { padding: 16 },
+  footer: { padding: 16, gap: 8 },
   cta: { borderRadius: 99, overflow: "hidden" },
   ctaGradient: { paddingVertical: 14, alignItems: "center" },
   ctaText: { fontFamily: font.semibold, fontSize: 15, color: "#fff" },
+  secondaryCta: {
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: border.hairline,
+  },
+  secondaryCtaText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
 });

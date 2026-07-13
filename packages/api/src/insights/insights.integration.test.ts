@@ -65,3 +65,41 @@ describe("insights", () => {
     expect(insights.some((i: { id: string }) => i.id === `shoe-${shoe.id}`)).toBe(true);
   });
 });
+
+describe("previsão de tempo de prova", () => {
+  it("sem corridas registradas, todas as previsões vêm null", async () => {
+    const s = await register("student", "pred1@runup.app");
+    const res = await app.inject({
+      method: "GET",
+      url: "/me/race-predictions",
+      headers: auth(s.token),
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body).toHaveLength(5);
+    expect(body.map((p: { distance: string }) => p.distance)).toEqual(["5k", "10k", "15k", "21k", "42k"]);
+    expect(body.every((p: { predictedSeconds: null }) => p.predictedSeconds === null)).toBe(true);
+  });
+
+  it("projeta tempos crescentes pras distâncias maiores, a partir de uma corrida real", async () => {
+    const s = await register("student", "pred2@runup.app");
+    await app.inject({
+      method: "POST",
+      url: "/me/workout-logs",
+      headers: auth(s.token),
+      payload: { kind: "running", distanceMeters: 5000, durationSeconds: 1500 },
+    });
+
+    const res = await app.inject({
+      method: "GET",
+      url: "/me/race-predictions",
+      headers: auth(s.token),
+    });
+    const body = res.json() as { distance: string; predictedSeconds: number | null }[];
+    const seconds = body.map((p) => p.predictedSeconds);
+    expect(seconds.every((s) => typeof s === "number")).toBe(true);
+    for (let i = 1; i < seconds.length; i++) {
+      expect(seconds[i]!).toBeGreaterThan(seconds[i - 1]!);
+    }
+  });
+});

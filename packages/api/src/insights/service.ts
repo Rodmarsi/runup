@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@runup/db";
+import { bestPredictedRaceTime, type EffortSample } from "@runup/core";
 
 export type InsightSeverity = "info" | "warning" | "success";
 
@@ -7,6 +8,24 @@ export interface Insight {
   message: string;
   severity: InsightSeverity;
 }
+
+export interface RacePrediction {
+  distance: string;
+  targetDistanceMeters: number;
+  predictedSeconds: number | null;
+}
+
+/** Distâncias-alvo da previsão — inclui 15k, que não é uma "prova oficial" do resto do app. */
+const PREDICTION_TARGETS: { distance: string; meters: number }[] = [
+  { distance: "5k", meters: 5_000 },
+  { distance: "10k", meters: 10_000 },
+  { distance: "15k", meters: 15_000 },
+  { distance: "21k", meters: 21_097 },
+  { distance: "42k", meters: 42_195 },
+];
+/** Ignora esforços curtos demais (ex.: tiros) — distorcem a extrapolação de Riegel. */
+const MIN_SAMPLE_METERS = 1_500;
+const LOOKBACK_DAYS = 90;
 
 function startOfWeek(now: Date): Date {
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -95,5 +114,35 @@ export class InsightsService {
     }
 
     return insights;
+  }
+
+  /** Previsão de tempo (Riegel) pras distâncias 5k/10k/15k/21k/42k, com base nas últimas corridas. */
+  async racePredictions(studentId: string, now: Date = new Date()): Promise<RacePrediction[]> {
+    const since = new Date(now);
+    since.setDate(since.getDate() - LOOKBACK_DAYS);
+
+    const logs = await this.db.workoutLog.findMany({
+      where: {
+        studentId,
+        kind: "running",
+        completedAt: { gte: since },
+        distanceMeters: { gte: MIN_SAMPLE_METERS },
+        durationSeconds: { not: null },
+      },
+      select: { distanceMeters: true, durationSeconds: true },
+    });
+
+    const samples: EffortSample[] = logs
+      .filter((l) => l.distanceMeters !== null && l.durationSeconds !== null)
+      .map((l) => ({ distanceMeters: l.distanceMeters!, timeSeconds: l.durationSeconds! }));
+
+    return PREDICTION_TARGETS.map(({ distance, meters }) => {
+      const predicted = bestPredictedRaceTime(samples, meters);
+      return {
+        distance,
+        targetDistanceMeters: meters,
+        predictedSeconds: predicted === null ? null : Math.round(predicted),
+      };
+    });
   }
 }

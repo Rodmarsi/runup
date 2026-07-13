@@ -13,8 +13,7 @@ export interface AiPlanPrefill {
 export type Route =
   | { name: "home" }
   | { name: "day"; date: string }
-  | { name: "liveWorkout"; dayId: string; title: string }
-  | { name: "checkin"; dayId: string; initialDurationSeconds?: number }
+  | { name: "checkin"; dayId: string }
   | { name: "logWorkout" }
   | { name: "goal"; goalId: string }
   | { name: "chat"; linkId: string; withName: string }

@@ -216,9 +216,21 @@ export interface GoalDto {
   status: string;
 }
 
+export interface RacePredictionDto {
+  distance: string;
+  targetDistanceMeters: number;
+  predictedSeconds: number | null;
+}
+
 export interface PersonalRecordDto {
   id: string;
-  distance: RaceDistance;
+  distance: string;
+  timeSeconds: number;
+  achievedAt: string;
+}
+
+export interface PersonalRecordInput {
+  distance: string;
   timeSeconds: number;
   achievedAt: string;
 }
@@ -365,6 +377,7 @@ export interface RaceDto {
   courseUrl: string | null;
   registrationUrl: string | null;
   status: RaceStatus;
+  isTarget: boolean;
   createdAt: string;
 }
 
@@ -388,6 +401,7 @@ export interface SearchRacesQuery {
 export interface ImportRaceInput {
   state: string;
   externalId: string;
+  isTarget?: boolean;
 }
 
 export interface CreateRaceInput {
@@ -400,6 +414,7 @@ export interface CreateRaceInput {
   targetTimeSeconds?: number;
   courseUrl?: string;
   registrationUrl?: string;
+  isTarget?: boolean;
 }
 
 /** Treinador move a data ou muda o status (cancelar → "skipped") de um dia. */
@@ -442,6 +457,7 @@ export interface UpdateRaceInput {
   courseUrl?: string;
   registrationUrl?: string;
   status?: RaceStatus;
+  isTarget?: boolean;
 }
 
 /** Erro padronizado da API: { code, message, details }. */

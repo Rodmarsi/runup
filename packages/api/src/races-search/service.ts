@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@runup/db";
 import { errors } from "../errors.js";
 import { PlanRecalculationService } from "../plans/recalculation-service.js";
+import { setAsTargetRace } from "../races/target.js";
 import {
   CorridasBrClient,
   parseLongestDistanceMeters,
@@ -54,11 +55,11 @@ export class RaceSearchService {
   }
 
   /** "Adicionar ao meu calendário" — importa uma prova encontrada na busca pro Race do aluno. */
-  async importToStudent(studentId: string, state: string, externalId: string) {
+  async importToStudent(studentId: string, state: string, externalId: string, isTarget?: boolean) {
     const detail = await this.client.getDetail(state, externalId);
     if (!detail.raceDate) throw errors.raceImportFailed();
 
-    const race = await this.db.race.create({
+    let race = await this.db.race.create({
       data: {
         studentId,
         name: detail.name || "Prova sem nome",
@@ -72,6 +73,7 @@ export class RaceSearchService {
         registrationUrl: detail.registrationUrl ?? undefined,
       },
     });
+    if (isTarget) race = await setAsTargetRace(this.db, studentId, race.id);
     await this.recalculation.recalculateForRace(studentId, race.raceDate);
     return race;
   }

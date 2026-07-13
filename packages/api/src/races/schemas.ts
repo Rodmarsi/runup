@@ -12,6 +12,7 @@ export const createRaceSchema = z.object({
   targetTimeSeconds: z.number().int().positive().optional(),
   courseUrl: z.string().url().max(500).optional(),
   registrationUrl: z.string().url().max(500).optional(),
+  isTarget: z.boolean().optional(),
 });
 
 export const updateRaceSchema = z.object({
@@ -25,6 +26,7 @@ export const updateRaceSchema = z.object({
   courseUrl: z.string().url().max(500).optional(),
   registrationUrl: z.string().url().max(500).optional(),
   status: z.enum(["interested", "registered", "completed"]).optional(),
+  isTarget: z.boolean().optional(),
 });
 
 export type CreateRaceInput = z.infer<typeof createRaceSchema>;

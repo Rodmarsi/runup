@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { color, border } from "@runup/ui/tokens";
-import type { WorkoutLogDto, WorkoutDayDto, Stats } from "@runup/api-client";
+import type { WorkoutLogDto, WorkoutDayDto, Stats, RacePredictionDto } from "@runup/api-client";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { useSettings } from "../settings.js";
 import { distance, unitLabel, duration } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
+
+const PREDICTION_LABEL: Record<string, string> = {
+  "5k": "5 km",
+  "10k": "10 km",
+  "15k": "15 km",
+  "21k": "21 km",
+  "42k": "42 km",
+};
 
 type Period = 30 | 90 | 365;
 const PERIODS: { value: Period; label: string }[] = [
@@ -47,6 +55,7 @@ export function AnalisesScreen() {
   const [logs, setLogs] = useState<WorkoutLogDto[]>([]);
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [predictions, setPredictions] = useState<RacePredictionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [period, setPeriod] = useState<Period>(30);
@@ -55,11 +64,12 @@ export function AnalisesScreen() {
     setLoading(true);
     setError(false);
     const since = new Date(Date.now() - 365 * DAY_MS).toISOString().slice(0, 10);
-    Promise.all([api.workoutLogs({ since }), api.calendar(), api.stats()])
-      .then(([l, d, s]) => {
+    Promise.all([api.workoutLogs({ since }), api.calendar(), api.stats(), api.racePredictions()])
+      .then(([l, d, s, pred]) => {
         setLogs(l);
         setDays(d);
         setStats(s);
+        setPredictions(pred);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -144,6 +154,26 @@ export function AnalisesScreen() {
         <Stat label="Dias perdidos" value={String(missedDays)} />
         <Stat label="Tempo médio/treino" value={avgTimePerWorkout ? duration(Math.round(avgTimePerWorkout)) : "—"} />
       </View>
+
+      <Text style={[text.overline, styles.label]}>PREVISÃO DE TEMPO</Text>
+      {predictions.every((p) => p.predictedSeconds === null) ? (
+        <Text style={text.muted}>
+          Registre corridas nos últimos 90 dias pra ver sua previsão de tempo nas distâncias.
+        </Text>
+      ) : (
+        <View style={styles.statGrid}>
+          {predictions.map((p) => (
+            <Stat
+              key={p.distance}
+              label={PREDICTION_LABEL[p.distance] ?? p.distance}
+              value={p.predictedSeconds !== null ? duration(p.predictedSeconds) : "—"}
+            />
+          ))}
+        </View>
+      )}
+      <Text style={[text.muted, styles.predictionHint]}>
+        Estimativa a partir das suas últimas corridas — não é garantia.
+      </Text>
     </ScrollView>
   );
 }
@@ -204,4 +234,5 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   statValue: { fontFamily: font.bold, fontSize: 18, color: color.textPrimary, marginTop: 6 },
+  predictionHint: { marginTop: 8, fontSize: 11 },
 });

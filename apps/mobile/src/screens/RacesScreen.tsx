@@ -67,21 +67,46 @@ export function RacesScreen() {
 
   useEffect(load, []);
 
+  /** Pergunta se a prova sendo cadastrada é a alvo — avisa se já existe uma. */
+  function askIsTarget(raceName: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const currentTarget = races.find((r) => r.isTarget);
+      if (currentTarget) {
+        Alert.alert(
+          "Prova alvo",
+          `Você já tem "${currentTarget.name}" como prova alvo. Marcar "${raceName}" no lugar dela?`,
+          [
+            { text: "Manter a atual", style: "cancel", onPress: () => resolve(false) },
+            { text: "Trocar", onPress: () => resolve(true) },
+          ],
+        );
+      } else {
+        Alert.alert("Prova alvo", `Marcar "${raceName}" como sua prova alvo?`, [
+          { text: "Não", style: "cancel", onPress: () => resolve(false) },
+          { text: "Sim", onPress: () => resolve(true) },
+        ]);
+      }
+    });
+  }
+
   async function addRace() {
     if (!name.trim() || !raceDate) {
       Alert.alert("Preenche o nome e a data da prova.");
       return;
     }
+    const raceName = name.trim();
+    const isTarget = await askIsTarget(raceName);
     setSaving(true);
     try {
       await api.createRace({
-        name: name.trim(),
+        name: raceName,
         city: city.trim() || undefined,
         state: state.trim() || undefined,
         raceDate,
         distanceMeters: distanceKm
           ? Math.round(parseFloat(distanceKm.replace(",", ".")) * 1000)
           : undefined,
+        isTarget,
       });
       setName("");
       setCity("");
@@ -117,9 +142,10 @@ export function RacesScreen() {
 
   async function importResult(result: ExternalRaceDto) {
     if (!searchState) return;
+    const isTarget = await askIsTarget(result.name);
     setImportingId(result.externalId);
     try {
-      await api.importRace({ state: searchState, externalId: result.externalId });
+      await api.importRace({ state: searchState, externalId: result.externalId, isTarget });
       Alert.alert(
         "Prova adicionada!",
         `${result.name} — se você já tinha treinos agendados, ajustamos a carga dos últimos dias antes da prova.`,
@@ -151,7 +177,10 @@ export function RacesScreen() {
     );
   }
 
-  const sorted = [...races].sort((a, b) => a.raceDate.localeCompare(b.raceDate));
+  const sorted = [...races].sort((a, b) => {
+    if (a.isTarget !== b.isTarget) return a.isTarget ? -1 : 1;
+    return a.raceDate.localeCompare(b.raceDate);
+  });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
@@ -166,17 +195,20 @@ export function RacesScreen() {
           <Pressable
             key={race.id}
             onPress={() => navigate({ name: "raceDetail", race })}
-            style={styles.card}
+            style={[styles.card, race.isTarget && styles.targetCard]}
           >
             <View style={{ flex: 1 }}>
-              <Text style={styles.raceName}>{race.name}</Text>
+              {race.isTarget && <Text style={styles.targetBadge}>🎯 PROVA ALVO</Text>}
+              <Text style={[styles.raceName, race.isTarget && styles.targetRaceName]}>
+                {race.name}
+              </Text>
               <Text style={text.muted}>
                 {[race.city, race.state].filter(Boolean).join(" — ")}
                 {race.city || race.state ? " · " : ""}
                 {race.raceDate.slice(0, 10)}
               </Text>
             </View>
-            <Text style={styles.countdown}>
+            <Text style={[styles.countdown, race.isTarget && styles.targetCountdown]}>
               {days >= 0 ? `${days}d` : "concluída"}
             </Text>
             <Text style={styles.chevron}>›</Text>
@@ -331,6 +363,21 @@ const styles = StyleSheet.create({
   raceName: { fontFamily: font.semibold, fontSize: 14, color: color.textPrimary },
   countdown: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
   chevron: { fontFamily: font.regular, fontSize: 18, color: color.textFaint },
+  targetCard: {
+    backgroundColor: color.orangeDim,
+    borderColor: color.orange500,
+    borderWidth: 1.5,
+    padding: 16,
+  },
+  targetBadge: {
+    fontFamily: font.bold,
+    fontSize: 10,
+    color: color.orange400,
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
+  targetRaceName: { fontSize: 16 },
+  targetCountdown: { fontSize: 15 },
   addBtn: {
     marginTop: 20,
     alignItems: "center",

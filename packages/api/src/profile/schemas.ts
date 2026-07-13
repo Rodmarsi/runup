@@ -8,8 +8,11 @@ export const bodyMetricSchema = z.object({
   bodyFatPct: z.number().min(0).max(70).optional(),
 });
 
+/** Categorias padrão de recorde pessoal — o aluno também pode criar a sua própria. */
+export const STANDARD_RECORD_CATEGORIES = ["5k", "10k", "15k", "21k", "42k"] as const;
+
 export const personalRecordSchema = z.object({
-  distance: z.enum(["5k", "10k", "21k", "42k", "other"]),
+  distance: z.string().trim().min(1).max(30),
   timeSeconds: z.number().int().positive(),
   achievedAt: isoDate,
 });

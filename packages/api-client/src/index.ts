@@ -11,6 +11,7 @@ import {
   type GoalOverview,
   type GoalDto,
   type PersonalRecordDto,
+  type PersonalRecordInput,
   type ConversationDto,
   type MessageDto,
   type StravaStatus,
@@ -42,6 +43,7 @@ import {
   type UpdateRaceInput,
   type GamificationSnapshot,
   type Insight,
+  type RacePredictionDto,
   type UpdateDayInput,
   type ExternalRaceDto,
   type SearchRacesQuery,
@@ -215,6 +217,10 @@ export class RunUpClient {
 
   personalRecords(): Promise<PersonalRecordDto[]> {
     return this.request<PersonalRecordDto[]>("GET", "/me/personal-records");
+  }
+
+  addPersonalRecord(input: PersonalRecordInput): Promise<PersonalRecordDto> {
+    return this.request<PersonalRecordDto>("POST", "/me/personal-records", input);
   }
 
   athleteProfile(): Promise<AthleteProfileDto> {
@@ -405,6 +411,10 @@ export class RunUpClient {
 
   insights(): Promise<Insight[]> {
     return this.request<Insight[]>("GET", "/me/insights");
+  }
+
+  racePredictions(): Promise<RacePredictionDto[]> {
+    return this.request<RacePredictionDto[]>("GET", "/me/race-predictions");
   }
 
   registerPushToken(token: string) {

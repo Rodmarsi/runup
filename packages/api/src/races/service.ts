@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@runup/db";
 import { errors } from "../errors.js";
 import { PlanRecalculationService } from "../plans/recalculation-service.js";
+import { setAsTargetRace } from "./target.js";
 import type { CreateRaceInput, UpdateRaceInput } from "./schemas.js";
 
 export class RaceService {
@@ -18,9 +19,11 @@ export class RaceService {
   }
 
   async createRace(studentId: string, input: CreateRaceInput) {
-    const race = await this.db.race.create({
-      data: { studentId, ...input, raceDate: new Date(input.raceDate) },
+    const { isTarget, ...rest } = input;
+    let race = await this.db.race.create({
+      data: { studentId, ...rest, raceDate: new Date(input.raceDate) },
     });
+    if (isTarget) race = await setAsTargetRace(this.db, studentId, race.id);
     // Recálculo automático: ajusta o plano já agendado do aluno pra essa prova nova.
     await this.recalculation.recalculateForRace(studentId, race.raceDate);
     return race;
@@ -34,10 +37,15 @@ export class RaceService {
 
   async updateRace(studentId: string, raceId: string, input: UpdateRaceInput) {
     await this.requireOwnRace(studentId, raceId);
-    const race = await this.db.race.update({
+    const { isTarget, ...rest } = input;
+    let race = await this.db.race.update({
       where: { id: raceId },
-      data: { ...input, raceDate: input.raceDate ? new Date(input.raceDate) : undefined },
+      data: { ...rest, raceDate: input.raceDate ? new Date(input.raceDate) : undefined },
     });
+    if (isTarget === true) race = await setAsTargetRace(this.db, studentId, raceId);
+    else if (isTarget === false) {
+      race = await this.db.race.update({ where: { id: raceId }, data: { isTarget: false } });
+    }
     // Data mudou — recalcula o plano pra nova data.
     if (input.raceDate) {
       await this.recalculation.recalculateForRace(studentId, race.raceDate);

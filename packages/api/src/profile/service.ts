@@ -37,11 +37,17 @@ export class ProfileService {
     });
   }
 
+  /** Upsert por categoria — só existe um recorde por aluno+distância. */
   addPersonalRecord(studentId: string, input: PersonalRecordInput) {
-    return this.db.personalRecord.create({
-      data: {
+    return this.db.personalRecord.upsert({
+      where: { studentId_distance: { studentId, distance: input.distance } },
+      create: {
         studentId,
         distance: input.distance,
+        timeSeconds: input.timeSeconds,
+        achievedAt: new Date(input.achievedAt),
+      },
+      update: {
         timeSeconds: input.timeSeconds,
         achievedAt: new Date(input.achievedAt),
       },

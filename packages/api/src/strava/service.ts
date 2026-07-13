@@ -1,5 +1,4 @@
 import type { PrismaClient } from "@runup/db";
-import type { RaceDistance } from "@runup/types";
 import { RACE_DISTANCE_METERS } from "@runup/core";
 import { errors } from "../errors.js";
 import { config } from "../config.js";
@@ -199,17 +198,21 @@ export class StravaService {
       const diff = Math.abs(activity.distanceMeters - meters) / meters;
       if (diff > DISTANCE_TOLERANCE) continue;
 
-      const existing = await this.db.personalRecord.findFirst({
-        where: { studentId, distance },
-        orderBy: { timeSeconds: "asc" },
+      const existing = await this.db.personalRecord.findUnique({
+        where: { studentId_distance: { studentId, distance } },
       });
       if (existing && existing.timeSeconds <= activity.movingTimeSeconds) {
         return false;
       }
-      await this.db.personalRecord.create({
-        data: {
+      await this.db.personalRecord.upsert({
+        where: { studentId_distance: { studentId, distance } },
+        create: {
           studentId,
-          distance: distance as RaceDistance,
+          distance,
+          timeSeconds: activity.movingTimeSeconds,
+          achievedAt: new Date(activity.startDate),
+        },
+        update: {
           timeSeconds: activity.movingTimeSeconds,
           achievedAt: new Date(activity.startDate),
         },

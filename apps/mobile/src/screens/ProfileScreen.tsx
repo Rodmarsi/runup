@@ -27,16 +27,28 @@ import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { useAuth } from "../auth.js";
 import { useSettings } from "../settings.js";
-import { duration, distance, unitLabel } from "../format.js";
+import { duration, distance, unitLabel, localIsoDate } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
+import { DateField } from "../components/DateField.js";
 
 const RACE_LABEL: Record<string, string> = {
   "5k": "5 km",
   "10k": "10 km",
+  "15k": "15 km",
   "21k": "21 km",
   "42k": "42 km",
   other: "Prova",
 };
+
+const STANDARD_RECORD_CATEGORIES = ["5k", "10k", "15k", "21k", "42k"];
+
+/** "1:32:45" ou "23:10" → segundos. */
+function parseTimeInput(input: string): number | undefined {
+  const parts = input.trim().split(":").map(Number);
+  if (parts.length < 2 || parts.length > 3 || parts.some((n) => Number.isNaN(n))) return undefined;
+  if (parts.length === 3) return parts[0]! * 3600 + parts[1]! * 60 + parts[2]!;
+  return parts[0]! * 60 + parts[1]!;
+}
 
 const ACHIEVEMENT_LABEL: Record<string, string> = {
   first_5k: "Primeiro 5 km",
@@ -73,6 +85,14 @@ export function ProfileScreen() {
   const [syncing, setSyncing] = useState(false);
   const [connectingStrava, setConnectingStrava] = useState(false);
   const [stravaError, setStravaError] = useState<string | null>(null);
+  const [addingPr, setAddingPr] = useState(false);
+  const [prCategory, setPrCategory] = useState<string>("5k");
+  const [prCustom, setPrCustom] = useState(false);
+  const [prCustomLabel, setPrCustomLabel] = useState("");
+  const [prDate, setPrDate] = useState(localIsoDate());
+  const [prTimeText, setPrTimeText] = useState("");
+  const [savingPr, setSavingPr] = useState(false);
+  const [prError, setPrError] = useState<string | null>(null);
 
   async function load() {
     const [s, p, g, st, conv, gam] = await Promise.all([
@@ -126,6 +146,37 @@ export function ProfileScreen() {
       );
     } finally {
       setConnectingStrava(false);
+    }
+  }
+
+  async function savePr() {
+    const distanceKey = prCustom ? prCustomLabel.trim() : prCategory;
+    const timeSeconds = parseTimeInput(prTimeText);
+    if (!distanceKey) {
+      setPrError("Dá um nome pra categoria.");
+      return;
+    }
+    if (!timeSeconds) {
+      setPrError("Tempo inválido — use mm:ss ou hh:mm:ss.");
+      return;
+    }
+    setPrError(null);
+    setSavingPr(true);
+    try {
+      const pr = await api.addPersonalRecord({
+        distance: distanceKey,
+        timeSeconds,
+        achievedAt: prDate,
+      });
+      setPrs((prev) => [pr, ...prev.filter((p) => p.distance !== pr.distance)]);
+      setAddingPr(false);
+      setPrCustom(false);
+      setPrCustomLabel("");
+      setPrTimeText("");
+    } catch (e) {
+      setPrError(e instanceof ApiError ? e.message : "Não foi possível salvar o recorde");
+    } finally {
+      setSavingPr(false);
     }
   }
 
@@ -325,11 +376,80 @@ export function ProfileScreen() {
         <View style={styles.prGrid}>
           {prs.map((pr) => (
             <View key={pr.id} style={styles.prCard}>
-              <Text style={text.muted}>{RACE_LABEL[pr.distance]}</Text>
+              <Text style={text.muted}>{RACE_LABEL[pr.distance] ?? pr.distance}</Text>
               <Text style={styles.prTime}>{duration(pr.timeSeconds)}</Text>
             </View>
           ))}
         </View>
+      )}
+
+      {addingPr ? (
+        <View style={styles.prForm}>
+          <View style={styles.chips}>
+            {STANDARD_RECORD_CATEGORIES.map((c) => (
+              <Pressable
+                key={c}
+                onPress={() => {
+                  setPrCategory(c);
+                  setPrCustom(false);
+                }}
+                style={[styles.chip, !prCustom && prCategory === c && styles.chipActive]}
+              >
+                <Text style={!prCustom && prCategory === c ? styles.chipTextActive : styles.chipText}>
+                  {RACE_LABEL[c]}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => setPrCustom(true)}
+              style={[styles.chip, prCustom && styles.chipActive]}
+            >
+              <Text style={prCustom ? styles.chipTextActive : styles.chipText}>+ Outra</Text>
+            </Pressable>
+          </View>
+
+          {prCustom && (
+            <TextInput
+              style={[styles.input, { marginTop: 10 }]}
+              value={prCustomLabel}
+              onChangeText={setPrCustomLabel}
+              placeholder="Nome da categoria (ex.: 8km)"
+              placeholderTextColor={color.textFaint}
+            />
+          )}
+
+          <View style={{ marginTop: 10 }}>
+            <DateField value={prDate} onChange={setPrDate} maximumDate={new Date()} />
+          </View>
+
+          <TextInput
+            style={[styles.input, { marginTop: 10 }]}
+            value={prTimeText}
+            onChangeText={setPrTimeText}
+            placeholder="Tempo (mm:ss ou hh:mm:ss)"
+            placeholderTextColor={color.textFaint}
+            keyboardType="numbers-and-punctuation"
+          />
+
+          {prError && <Text style={styles.prErrorText}>{prError}</Text>}
+
+          <View style={styles.prFormRow}>
+            <Pressable onPress={() => setAddingPr(false)} style={styles.cancelBtn}>
+              <Text style={styles.cancelBtnText}>Cancelar</Text>
+            </Pressable>
+            <Pressable
+              onPress={savePr}
+              disabled={savingPr}
+              style={[styles.acceptBtn, { flex: 1, alignItems: "center" }]}
+            >
+              <Text style={styles.acceptBtnText}>{savingPr ? "..." : "Salvar recorde"}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Pressable onPress={() => setAddingPr(true)} style={styles.addPrBtn}>
+          <Text style={styles.addPrBtnText}>+ Adicionar recorde</Text>
+        </Pressable>
       )}
 
       {/* Dispositivos conectados */}
@@ -600,4 +720,63 @@ const styles = StyleSheet.create({
     borderColor: border.strong,
   },
   logoutText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
+  addPrBtn: {
+    marginTop: 10,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 99,
+    backgroundColor: color.orangeDim,
+    borderWidth: 1,
+    borderColor: color.orange500,
+  },
+  addPrBtnText: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
+  prForm: {
+    marginTop: 10,
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 14,
+  },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 99,
+    backgroundColor: color.surface1,
+    borderWidth: 1,
+    borderColor: border.hairline,
+  },
+  chipActive: { backgroundColor: color.orangeDim, borderColor: color.orange500 },
+  chipText: { fontFamily: font.medium, fontSize: 12, color: color.textSecondary },
+  chipTextActive: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
+  input: {
+    backgroundColor: color.surface1,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    color: color.textPrimary,
+    fontFamily: font.regular,
+    fontSize: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  prErrorText: { fontFamily: font.regular, fontSize: 12, color: color.danger, marginTop: 8 },
+  prFormRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+  cancelBtn: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: border.strong,
+  },
+  cancelBtnText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
+  acceptBtn: {
+    backgroundColor: color.orange500,
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  acceptBtnText: { fontFamily: font.semibold, fontSize: 13, color: color.ink },
 });

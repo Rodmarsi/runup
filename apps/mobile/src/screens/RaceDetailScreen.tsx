@@ -30,6 +30,8 @@ export function RaceDetailScreen({ race }: { race: RaceDto }) {
   const { goHome, navigate } = useNav();
   const [status, setStatus] = useState(race.status);
   const [savingStatus, setSavingStatus] = useState(false);
+  const [isTarget, setIsTarget] = useState(race.isTarget);
+  const [savingTarget, setSavingTarget] = useState(false);
 
   async function changeStatus(next: RaceStatus) {
     setSavingStatus(true);
@@ -40,6 +42,18 @@ export function RaceDetailScreen({ race }: { race: RaceDto }) {
       Alert.alert("Erro", e instanceof ApiError ? e.message : "Não foi possível atualizar");
     } finally {
       setSavingStatus(false);
+    }
+  }
+
+  async function toggleTarget() {
+    setSavingTarget(true);
+    try {
+      await api.updateRace(race.id, { isTarget: !isTarget });
+      setIsTarget((v) => !v);
+    } catch (e) {
+      Alert.alert("Erro", e instanceof ApiError ? e.message : "Não foi possível atualizar");
+    } finally {
+      setSavingTarget(false);
     }
   }
 
@@ -81,6 +95,16 @@ export function RaceDetailScreen({ race }: { race: RaceDto }) {
         {race.raceDate.slice(0, 10)}
         {race.startTime ? ` · largada ${race.startTime}` : ""}
       </Text>
+
+      <Pressable
+        onPress={toggleTarget}
+        disabled={savingTarget}
+        style={[styles.targetToggle, isTarget && styles.targetToggleActive]}
+      >
+        <Text style={isTarget ? styles.targetToggleTextActive : styles.targetToggleText}>
+          {isTarget ? "🎯 Prova alvo" : "Marcar como prova alvo"}
+        </Text>
+      </Pressable>
 
       <View style={styles.metaRow}>
         <MetaCard label="Distância" value={race.distanceMeters ? `${km(race.distanceMeters)} km` : "—"} />
@@ -153,6 +177,18 @@ const styles = StyleSheet.create({
   back: { marginBottom: 12 },
   backText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
   subtitle: { marginTop: 4, marginBottom: 16 },
+  targetToggle: {
+    alignSelf: "flex-start",
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: border.hairline,
+  },
+  targetToggleActive: { backgroundColor: color.orangeDim, borderColor: color.orange500 },
+  targetToggleText: { fontFamily: font.medium, fontSize: 12, color: color.textSecondary },
+  targetToggleTextActive: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
   metaRow: { flexDirection: "row", gap: 8 },
   metaCard: {
     flex: 1,

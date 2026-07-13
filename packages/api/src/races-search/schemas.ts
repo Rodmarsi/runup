@@ -17,6 +17,7 @@ export const searchRacesQuerySchema = z.object({
 export const importRaceSchema = z.object({
   state: uf,
   externalId: z.string().min(1).max(20),
+  isTarget: z.boolean().optional(),
 });
 
 export type SearchRacesQuery = z.infer<typeof searchRacesQuerySchema>;

@@ -25,19 +25,11 @@ const STATUSES: { label: string; value: WorkoutDayStatus }[] = [
 const PAINS = ["Nenhuma", "Joelho", "Panturrilha", "Canela", "Outro"];
 const RPE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-export function CheckinScreen({
-  dayId,
-  initialDurationSeconds,
-}: {
-  dayId: string;
-  initialDurationSeconds?: number;
-}) {
+export function CheckinScreen({ dayId }: { dayId: string }) {
   const { goHome } = useNav();
   const [status, setStatus] = useState<WorkoutDayStatus>("done");
   const [distanceKm, setDistanceKm] = useState("");
-  const [durationMin, setDurationMin] = useState(
-    initialDurationSeconds ? String(Math.round(initialDurationSeconds / 60)) : "",
-  );
+  const [durationMin, setDurationMin] = useState("");
   const [rpe, setRpe] = useState<number | null>(null);
   const [pain, setPain] = useState<string | null>("Nenhuma");
   const [notes, setNotes] = useState("");

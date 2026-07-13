@@ -80,6 +80,43 @@ describe("perfil: métricas e recordes", () => {
     });
     expect(prs.json()[0]).toMatchObject({ distance: "10k", timeSeconds: 2832 });
   });
+
+  it("mantém só 1 recorde por categoria (upsert)", async () => {
+    const s = await register("student", "prof2@runup.app");
+    await app.inject({
+      method: "POST",
+      url: "/me/personal-records",
+      headers: auth(s.token),
+      payload: { distance: "5k", timeSeconds: 1500, achievedAt: "2026-05-01" },
+    });
+    await app.inject({
+      method: "POST",
+      url: "/me/personal-records",
+      headers: auth(s.token),
+      payload: { distance: "5k", timeSeconds: 1380, achievedAt: "2026-06-01" },
+    });
+
+    const prs = await app.inject({
+      method: "GET",
+      url: "/me/personal-records",
+      headers: auth(s.token),
+    });
+    const body = prs.json();
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({ distance: "5k", timeSeconds: 1380 });
+  });
+
+  it("aceita categoria customizada além das padrão", async () => {
+    const s = await register("student", "prof3@runup.app");
+    const res = await app.inject({
+      method: "POST",
+      url: "/me/personal-records",
+      headers: auth(s.token),
+      payload: { distance: "8km trilha", timeSeconds: 2400, achievedAt: "2026-06-01" },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toMatchObject({ distance: "8km trilha" });
+  });
 });
 
 describe("perfil do atleta e edição de conta", () => {

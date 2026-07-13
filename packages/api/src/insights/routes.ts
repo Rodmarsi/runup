@@ -11,5 +11,9 @@ export function insightsRoutes(db: PrismaClient) {
     app.get("/me/insights", asStudent, async (request) => {
       return insights.forStudent(request.authUser!.id);
     });
+
+    app.get("/me/race-predictions", asStudent, async (request) => {
+      return insights.racePredictions(request.authUser!.id);
+    });
   };
 }

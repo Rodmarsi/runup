@@ -31,6 +31,7 @@ export function raceSearchRoutes(db: PrismaClient, client?: RaceSearchClient) {
         request.authUser!.id,
         parsed.data.state,
         parsed.data.externalId,
+        parsed.data.isTarget,
       );
       reply.status(201).send(race);
     });

@@ -96,3 +96,65 @@ describe("provas", () => {
     expect(res.statusCode).toBe(404);
   });
 });
+
+describe("prova alvo", () => {
+  it("marcar uma nova prova alvo desmarca a anterior", async () => {
+    const s = await register("student", "target1@runup.app");
+
+    const first = await app.inject({
+      method: "POST",
+      url: "/me/races",
+      headers: auth(s.token),
+      payload: { name: "Prova A", raceDate: "2026-09-01", isTarget: true },
+    });
+    expect(first.json()).toMatchObject({ isTarget: true });
+
+    const second = await app.inject({
+      method: "POST",
+      url: "/me/races",
+      headers: auth(s.token),
+      payload: { name: "Prova B", raceDate: "2026-10-01", isTarget: true },
+    });
+    expect(second.json()).toMatchObject({ isTarget: true });
+
+    const listed = await app.inject({
+      method: "GET",
+      url: "/me/races",
+      headers: auth(s.token),
+    });
+    const targets = listed.json().filter((r: { isTarget: boolean }) => r.isTarget);
+    expect(targets).toHaveLength(1);
+    expect(targets[0].name).toBe("Prova B");
+  });
+
+  it("marca uma prova existente como alvo via PATCH, trocando a anterior", async () => {
+    const s = await register("student", "target2@runup.app");
+    const a = await app.inject({
+      method: "POST",
+      url: "/me/races",
+      headers: auth(s.token),
+      payload: { name: "Prova A", raceDate: "2026-09-01", isTarget: true },
+    });
+    const b = await app.inject({
+      method: "POST",
+      url: "/me/races",
+      headers: auth(s.token),
+      payload: { name: "Prova B", raceDate: "2026-10-01" },
+    });
+
+    await app.inject({
+      method: "PATCH",
+      url: `/me/races/${b.json().id}`,
+      headers: auth(s.token),
+      payload: { isTarget: true },
+    });
+
+    const refreshedA = await app.inject({
+      method: "GET",
+      url: "/me/races",
+      headers: auth(s.token),
+    });
+    const raceA = refreshedA.json().find((r: { id: string }) => r.id === a.json().id);
+    expect(raceA.isTarget).toBe(false);
+  });
+});

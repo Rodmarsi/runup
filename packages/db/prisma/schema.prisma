@@ -294,7 +294,7 @@ model PersonalRecord {
   timeSeconds Int
   achievedAt  DateTime
 
-  @@index([studentId])
+  @@unique([studentId, distance])
 }
 
 model Goal {
@@ -434,6 +434,9 @@ model Race {
   courseUrl         String?
   registrationUrl   String?
   status            RaceStatus @default(interested)
+  // Só uma prova alvo por aluno por vez (garantido por índice único parcial
+  // na migration — o Prisma não modela índice parcial no schema).
+  isTarget          Boolean    @default(false)
   createdAt         DateTime   @default(now())
 
   @@index([studentId])

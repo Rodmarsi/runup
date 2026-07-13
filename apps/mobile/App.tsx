@@ -23,7 +23,6 @@ import { GoalScreen } from "./src/screens/GoalScreen.js";
 import { ChatScreen } from "./src/screens/ChatScreen.js";
 import { CreateWorkoutScreen } from "./src/screens/CreateWorkoutScreen.js";
 import { AiPlanWizardScreen } from "./src/screens/AiPlanWizardScreen.js";
-import { LiveWorkoutScreen } from "./src/screens/LiveWorkoutScreen.js";
 
 /**
  * Rotas "de fluxo" (ação focada, sem bottom nav). Tudo mais — dia, provas,
@@ -34,10 +33,8 @@ import { LiveWorkoutScreen } from "./src/screens/LiveWorkoutScreen.js";
 function Router() {
   const { route } = useNav();
   switch (route.name) {
-    case "liveWorkout":
-      return <LiveWorkoutScreen dayId={route.dayId} title={route.title} />;
     case "checkin":
-      return <CheckinScreen dayId={route.dayId} initialDurationSeconds={route.initialDurationSeconds} />;
+      return <CheckinScreen dayId={route.dayId} />;
     case "logWorkout":
       return <LogWorkoutScreen />;
     case "goal":
