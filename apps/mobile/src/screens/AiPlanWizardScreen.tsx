@@ -16,7 +16,7 @@ import type { RaceDistance } from "@runup/types";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav, type AiPlanPrefill } from "../nav.js";
-import { localIsoDate } from "../format.js";
+import { localIsoDate, parsePace, summarizePlanDays } from "../format.js";
 import { DateField } from "../components/DateField.js";
 
 const RACE_LABEL: Record<RaceDistance, string> = {
@@ -34,18 +34,11 @@ const EXPERIENCE_LABEL: Record<ExperienceLevel, string> = {
 const WEEKDAY_LABEL = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const DURATIONS = [4, 8, 12, 16];
 
-/** "5:30" → 330 segundos. */
-function parsePace(text: string): number | undefined {
-  const m = text.match(/^(\d+):(\d{2})$/);
-  if (!m) return undefined;
-  return Number(m[1]) * 60 + Number(m[2]);
-}
-
 type Step = 0 | 1 | 2 | 3;
 
 /** Fluxo conversacional "Criar com IA": responde um questionário → recebe um plano completo. */
 export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
-  const { goHome } = useNav();
+  const { goHome, navigate } = useNav();
   const [step, setStep] = useState<Step>(0);
 
   const [objective, setObjective] = useState(prefill?.objective ?? "");
@@ -104,14 +97,25 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
     if (!preview) return;
     setConfirming(true);
     try {
+      const days = preview.plan.days.map((d) => ({ week: d.week, date: d.date!, blocks: d.blocks }));
       await api.createSelfPlan({
         title: preview.plan.title,
         durationWeeks: preview.plan.durationWeeks,
-        days: preview.plan.days.map((d) => ({ week: d.week, date: d.date!, blocks: d.blocks })),
+        days,
       });
-      Alert.alert("Plano criado!", "Seu plano já está no calendário.", [
-        { text: "OK", onPress: goHome },
-      ]);
+      const { workoutsPerWeek, kindBreakdown } = summarizePlanDays(days);
+      navigate({
+        name: "planOverview",
+        data: {
+          title: preview.plan.title,
+          durationWeeks: preview.plan.durationWeeks,
+          origin: "ai",
+          coachName: null,
+          totalWorkouts: days.length,
+          workoutsPerWeek,
+          kindBreakdown,
+        },
+      });
     } catch (e) {
       Alert.alert("Erro", e instanceof ApiError ? e.message : "Não foi possível salvar o plano");
     } finally {

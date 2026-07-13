@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,15 +6,14 @@ import {
   Pressable,
   TextInput,
   StyleSheet,
-  Alert,
 } from "react-native";
 import { color, border } from "@runup/ui/tokens";
 import { ApiError } from "@runup/api-client";
-import type { BlockKind } from "@runup/types";
+import type { BlockItem, BlockKind, RunningType } from "@runup/types";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { localIsoDate } from "../format.js";
+import { localIsoDate, parsePace, pace, duration } from "../format.js";
 
 const KIND_LABEL: Record<BlockKind, string> = {
   running: "Corrida",
@@ -23,6 +22,18 @@ const KIND_LABEL: Record<BlockKind, string> = {
   free: "Livre",
 };
 const KINDS: BlockKind[] = ["running", "strength", "mobility", "free"];
+
+// "Intervalado" fica de fora — pede estrutura de reps/recuperação que esse
+// criador simples não edita (isso é papel do wizard de IA ou do treinador).
+const RUNNING_TYPES: RunningType[] = ["easy", "long", "tempo", "recovery"];
+const RUNNING_TYPE_LABEL: Record<RunningType, string> = {
+  easy: "Leve",
+  intervals: "Intervalado",
+  long: "Longo",
+  tempo: "Tempo",
+  recovery: "Recuperação",
+};
+
 const WEEKDAYS = ["D", "S", "T", "Q", "Q", "S", "S"];
 const MONTHS = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -49,10 +60,14 @@ function monthOffsetFor(iso?: string): number {
 
 /** Aluno agenda um ou mais treinos futuros por conta própria — sem treinador. */
 export function CreateWorkoutScreen({ initialDate }: { initialDate?: string }) {
-  const { goHome } = useNav();
+  const { goHome, navigate } = useNav();
   const [kind, setKind] = useState<BlockKind>("running");
   const [name, setName] = useState("");
+  const [nameEdited, setNameEdited] = useState(false);
   const [description, setDescription] = useState("");
+  const [runningType, setRunningType] = useState<RunningType>("easy");
+  const [distanceKm, setDistanceKm] = useState("");
+  const [paceText, setPaceText] = useState("");
   const [monthOffset, setMonthOffset] = useState(() => monthOffsetFor(initialDate));
   const [selectedDates, setSelectedDates] = useState<string[]>(initialDate ? [initialDate] : []);
   const [saving, setSaving] = useState(false);
@@ -64,6 +79,18 @@ export function CreateWorkoutScreen({ initialDate }: { initialDate?: string }) {
   const month = shown.getMonth();
   const grid = monthGrid(year, month);
   const today = localIsoDate();
+
+  const targetPaceSecPerKm = parsePace(paceText);
+  const distanceMeters = distanceKm ? Math.round(parseFloat(distanceKm.replace(",", ".")) * 1000) : undefined;
+  const estimatedSeconds =
+    distanceMeters && targetPaceSecPerKm ? Math.round((distanceMeters / 1000) * targetPaceSecPerKm) : null;
+
+  // Sugere um título a partir da distância/tipo, até o aluno editar o nome à mão.
+  useEffect(() => {
+    if (kind !== "running" || nameEdited) return;
+    if (!distanceKm) return;
+    setName(`${distanceKm}km ${RUNNING_TYPE_LABEL[runningType].toLowerCase()}`);
+  }, [kind, runningType, distanceKm, nameEdited]);
 
   function toggleDate(iso: string) {
     setSelectedDates((prev) =>
@@ -80,10 +107,20 @@ export function CreateWorkoutScreen({ initialDate }: { initialDate?: string }) {
       setError("Escolhe pelo menos uma data.");
       return;
     }
+    if (kind === "running" && !distanceMeters) {
+      setError("Informa a distância da corrida.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const notes = description.trim() ? `${name.trim()} — ${description.trim()}` : name.trim();
+      const item: BlockItem =
+        kind === "running"
+          ? { kind: "running", runningType, distanceMeters, targetPaceSecPerKm }
+          : {
+              kind: "free",
+              notes: description.trim() ? `${name.trim()} — ${description.trim()}` : name.trim(),
+            };
       await api.createSelfPlan({
         title: name.trim(),
         durationWeeks: 1,
@@ -95,12 +132,23 @@ export function CreateWorkoutScreen({ initialDate }: { initialDate?: string }) {
               kind,
               role: "main",
               order: 0,
-              items: [{ kind: "free", notes }],
+              items: [item],
             },
           ],
         })),
       });
-      Alert.alert("Treino agendado!", "", [{ text: "OK", onPress: goHome }]);
+      navigate({
+        name: "planOverview",
+        data: {
+          title: name.trim(),
+          durationWeeks: 1,
+          origin: "manual",
+          coachName: null,
+          totalWorkouts: selectedDates.length,
+          workoutsPerWeek: selectedDates.length,
+          kindBreakdown: [{ kind, count: selectedDates.length }],
+        },
+      });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Não foi possível criar o treino");
     } finally {
@@ -138,20 +186,84 @@ export function CreateWorkoutScreen({ initialDate }: { initialDate?: string }) {
         <TextInput
           style={styles.input}
           value={name}
-          onChangeText={setName}
-          placeholder="ex.: Treino de pernas"
+          onChangeText={(t) => {
+            setName(t);
+            setNameEdited(true);
+          }}
+          placeholder={kind === "running" ? "ex.: 5km leve" : "ex.: Treino de pernas"}
           placeholderTextColor={color.textMuted}
         />
 
-        <Text style={[text.overline, styles.label]}>DESCRIÇÃO (OPCIONAL)</Text>
-        <TextInput
-          style={[styles.input, styles.textarea]}
-          multiline
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Objetivo, detalhes do treino..."
-          placeholderTextColor={color.textMuted}
-        />
+        {kind === "running" ? (
+          <View style={styles.workoutCard}>
+            <Text style={[text.overline, styles.label, { marginTop: 0 }]}>TIPO DE CORRIDA</Text>
+            <View style={styles.chips}>
+              {RUNNING_TYPES.map((rt) => {
+                const active = runningType === rt;
+                return (
+                  <Pressable
+                    key={rt}
+                    onPress={() => setRunningType(rt)}
+                    style={[styles.chip, active && styles.chipActive]}
+                  >
+                    <Text style={active ? styles.chipTextActive : styles.chipText}>
+                      {RUNNING_TYPE_LABEL[rt]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.row2}>
+              <View style={{ flex: 1 }}>
+                <Text style={[text.overline, styles.label]}>DISTÂNCIA (KM)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={distanceKm}
+                  onChangeText={setDistanceKm}
+                  keyboardType="decimal-pad"
+                  placeholder="ex.: 5"
+                  placeholderTextColor={color.textMuted}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[text.overline, styles.label]}>RITMO ALVO (OPCIONAL)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={paceText}
+                  onChangeText={setPaceText}
+                  placeholder="mm:ss /km"
+                  placeholderTextColor={color.textMuted}
+                />
+              </View>
+            </View>
+
+            {estimatedSeconds !== null && (
+              <View style={styles.estimateRow}>
+                <Text style={text.muted}>Duração estimada</Text>
+                <Text style={styles.estimateValue}>≈ {duration(estimatedSeconds)}</Text>
+              </View>
+            )}
+
+            {targetPaceSecPerKm && (
+              <Text style={[text.secondary, styles.paceHint]}>
+                Não mais rápido que {pace(targetPaceSecPerKm)}/km. Isso é um limite, não uma meta.
+              </Text>
+            )}
+          </View>
+        ) : (
+          <>
+            <Text style={[text.overline, styles.label]}>DESCRIÇÃO (OPCIONAL)</Text>
+            <TextInput
+              style={[styles.input, styles.textarea]}
+              multiline
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Objetivo, detalhes do treino..."
+              placeholderTextColor={color.textMuted}
+            />
+          </>
+        )}
 
         <Text style={[text.overline, styles.label]}>
           DATAS {selectedDates.length > 0 ? `(${selectedDates.length} selecionada${selectedDates.length > 1 ? "s" : ""})` : ""}
@@ -243,6 +355,26 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   textarea: { height: 70, textAlignVertical: "top" },
+  row2: { flexDirection: "row", gap: 10 },
+  workoutCard: {
+    marginTop: 16,
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,85,0,0.35)",
+    padding: 14,
+  },
+  estimateRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: border.hairline,
+  },
+  estimateValue: { fontFamily: font.semibold, fontSize: 15, color: color.textPrimary },
+  paceHint: { marginTop: 8, fontSize: 12, lineHeight: 17 },
   monthHeader: {
     flexDirection: "row",
     alignItems: "center",

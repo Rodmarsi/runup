@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@runup/db";
+import type { Block, BlockKind } from "@runup/types";
 import { errors } from "../errors.js";
 import { GamificationService } from "../gamification/service.js";
 import { NotificationService } from "../notifications/service.js";
@@ -11,6 +12,25 @@ import type {
   UpdateDayInput,
   DuplicateDayInput,
 } from "./schemas.js";
+
+/** Frequência (pico semanal) e distribuição por tipo — pra tela "Visão geral do plano". */
+function summarizePlanDays(days: { week: number; blocks: unknown }[]) {
+  const perWeek = new Map<number, number>();
+  const kindCounts = new Map<BlockKind, number>();
+
+  for (const day of days) {
+    perWeek.set(day.week, (perWeek.get(day.week) ?? 0) + 1);
+
+    const blocks = day.blocks as unknown as Block[];
+    const main = blocks.find((b) => b.role === "main") ?? blocks[0];
+    if (main) kindCounts.set(main.kind, (kindCounts.get(main.kind) ?? 0) + 1);
+  }
+
+  return {
+    workoutsPerWeek: perWeek.size > 0 ? Math.max(...perWeek.values()) : 0,
+    kindBreakdown: [...kindCounts.entries()].map(([kind, count]) => ({ kind, count })),
+  };
+}
 
 export class PlanService {
   private readonly gamification: GamificationService;
@@ -168,18 +188,24 @@ export class PlanService {
     const assignment = await this.db.planAssignment.findFirst({
       where: { studentId },
       orderBy: { plan: { createdAt: "desc" } },
-      include: { plan: { include: { owner: true } } },
+      include: { plan: { include: { owner: true, workoutDays: true } } },
     });
     if (!assignment) return null;
 
     const { plan } = assignment;
     const madeByCoach = plan.ownerId !== studentId;
+    const { workoutsPerWeek, kindBreakdown } = summarizePlanDays(plan.workoutDays);
+
     return {
+      id: plan.id,
       title: plan.title,
       durationWeeks: plan.durationWeeks,
       createdAt: plan.createdAt,
       madeByCoach,
       coachName: madeByCoach ? plan.owner.name : null,
+      totalWorkouts: plan.workoutDays.length,
+      workoutsPerWeek,
+      kindBreakdown,
     };
   }
 

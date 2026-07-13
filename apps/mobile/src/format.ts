@@ -1,3 +1,5 @@
+import type { Block } from "@runup/types";
+
 /**
  * Data (YYYY-MM-DD) no fuso horário LOCAL do aparelho — nunca use
  * `Date#toISOString()` para "hoje": ele converte para UTC, então perto da
@@ -32,6 +34,13 @@ export function greeting(d: Date = new Date()): string {
 /** Formata metros como km com uma casa (ex.: 6480 → "6,5"). */
 export function km(meters: number): string {
   return (meters / 1000).toFixed(1).replace(".", ",");
+}
+
+/** "5:30" → 330 segundos. */
+export function parsePace(text: string): number | undefined {
+  const m = text.match(/^(\d+):(\d{2})$/);
+  if (!m) return undefined;
+  return Number(m[1]) * 60 + Number(m[2]);
 }
 
 /** Pace (s/km) como "m:ss" (ex.: 270 → "4:30"). */
@@ -81,6 +90,25 @@ export function splitBarWidth(
   const max = Math.max(...paces);
   if (max === min) return 100;
   return 30 + (70 * (paceSecPerKm - min)) / (max - min);
+}
+
+/** Frequência (pico semanal) e distribuição por tipo — pra tela "Visão geral do plano". */
+export function summarizePlanDays(
+  days: { week: number; blocks: Block[] }[],
+): { workoutsPerWeek: number; kindBreakdown: { kind: string; count: number }[] } {
+  const perWeek = new Map<number, number>();
+  const kindCounts = new Map<string, number>();
+
+  for (const day of days) {
+    perWeek.set(day.week, (perWeek.get(day.week) ?? 0) + 1);
+    const main = day.blocks.find((b) => b.role === "main") ?? day.blocks[0];
+    if (main) kindCounts.set(main.kind, (kindCounts.get(main.kind) ?? 0) + 1);
+  }
+
+  return {
+    workoutsPerWeek: perWeek.size > 0 ? Math.max(...perWeek.values()) : 0,
+    kindBreakdown: [...kindCounts.entries()].map(([kind, count]) => ({ kind, count })),
+  };
 }
 
 /** Duração em s como "1h52" ou "31:47". */

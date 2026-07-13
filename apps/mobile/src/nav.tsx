@@ -10,6 +10,17 @@ export interface AiPlanPrefill {
   objective?: string;
 }
 
+/** Resumo de um plano pra tela "Visão geral" — vem da IA/manual recém-criado ou do servidor. */
+export interface PlanOverviewData {
+  title: string;
+  durationWeeks: number;
+  origin: "ai" | "manual" | "coach";
+  coachName: string | null;
+  totalWorkouts: number;
+  workoutsPerWeek: number;
+  kindBreakdown: { kind: string; count: number }[];
+}
+
 export type Route =
   | { name: "home" }
   | { name: "day"; date: string }
@@ -25,7 +36,8 @@ export type Route =
   | { name: "createWorkout"; initialDate?: string }
   | { name: "aiPlanWizard"; prefill?: AiPlanPrefill }
   | { name: "races" }
-  | { name: "raceDetail"; race: RaceDto };
+  | { name: "raceDetail"; race: RaceDto }
+  | { name: "planOverview"; data: PlanOverviewData };
 
 interface Nav {
   route: Route;

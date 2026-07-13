@@ -130,6 +130,9 @@ describe("criação e atribuição de plano", () => {
     expect(body.title).toBe("Plano Meia PoA");
     expect(body.madeByCoach).toBe(true);
     expect(body.coachName).toContain("coach-p1b@runup.app");
+    expect(body.totalWorkouts).toBe(2);
+    expect(body.workoutsPerWeek).toBe(2);
+    expect(body.kindBreakdown).toEqual([{ kind: "running", count: 2 }]);
   });
 
   it("aluno sem nenhum plano recebe null em /me/current-plan", async () => {

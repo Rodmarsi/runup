@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import {
   SafeAreaProvider,
   SafeAreaView,
 } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
 import {
   useFonts,
   Poppins_400Regular,
@@ -23,6 +25,7 @@ import { GoalScreen } from "./src/screens/GoalScreen.js";
 import { ChatScreen } from "./src/screens/ChatScreen.js";
 import { CreateWorkoutScreen } from "./src/screens/CreateWorkoutScreen.js";
 import { AiPlanWizardScreen } from "./src/screens/AiPlanWizardScreen.js";
+import { PlanOverviewScreen } from "./src/screens/PlanOverviewScreen.js";
 
 /**
  * Rotas "de fluxo" (ação focada, sem bottom nav). Tudo mais — dia, provas,
@@ -45,6 +48,8 @@ function Router() {
       return <CreateWorkoutScreen initialDate={route.initialDate} />;
     case "aiPlanWizard":
       return <AiPlanWizardScreen prefill={route.prefill} />;
+    case "planOverview":
+      return <PlanOverviewScreen data={route.data} />;
     default:
       return <MainTabs />;
   }
@@ -67,6 +72,8 @@ function Gate() {
   );
 }
 
+SplashScreen.preventAutoHideAsync();
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
@@ -75,13 +82,12 @@ export default function App() {
     Poppins_700Bold,
   });
 
-  if (!fontsLoaded) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={color.orange500} />
-      </View>
-    );
-  }
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  // Splash nativa continua visível — evita o flash de um spinner por cima dela.
+  if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider>

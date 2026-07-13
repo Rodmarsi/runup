@@ -82,6 +82,22 @@ export function PlanoScreen() {
 
   useEffect(load, []);
 
+  function openPlanOverview() {
+    if (!currentPlan) return;
+    navigate({
+      name: "planOverview",
+      data: {
+        title: currentPlan.title,
+        durationWeeks: currentPlan.durationWeeks,
+        origin: currentPlan.madeByCoach ? "coach" : "manual",
+        coachName: currentPlan.coachName,
+        totalWorkouts: currentPlan.totalWorkouts,
+        workoutsPerWeek: currentPlan.workoutsPerWeek,
+        kindBreakdown: currentPlan.kindBreakdown,
+      },
+    });
+  }
+
   async function sendCoachInvite() {
     if (!coachEmail.trim()) return;
     setInviteSaving(true);
@@ -165,12 +181,6 @@ export function PlanoScreen() {
         <View style={styles.coachCard}>
           <Text style={[text.overline, styles.coachLabel]}>SEU TREINADOR</Text>
           <Text style={text.body}>{conversations[0]!.with.name}</Text>
-          {currentPlan && (
-            <Text style={[text.secondary, styles.currentPlanText]}>
-              Último plano: {currentPlan.title} · {currentPlan.durationWeeks} semanas
-              {currentPlan.madeByCoach ? "" : " (criado por você)"}
-            </Text>
-          )}
         </View>
       ) : invitingCoach ? (
         <View style={styles.coachCard}>
@@ -201,6 +211,20 @@ export function PlanoScreen() {
       ) : (
         <Pressable onPress={() => setInvitingCoach(true)} style={styles.hireBtn}>
           <Text style={styles.hireBtnText}>Contratar treinador</Text>
+        </Pressable>
+      )}
+
+      {currentPlan && (
+        <Pressable onPress={openPlanOverview} style={styles.currentPlanCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={[text.overline, styles.currentPlanLabel]}>SEU PLANO ATUAL</Text>
+            <Text style={styles.currentPlanTitle}>{currentPlan.title}</Text>
+            <Text style={text.muted}>
+              {currentPlan.durationWeeks} semana{currentPlan.durationWeeks > 1 ? "s" : ""}
+              {currentPlan.madeByCoach && currentPlan.coachName ? ` · ${currentPlan.coachName}` : ""}
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
         </Pressable>
       )}
 
@@ -284,7 +308,19 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   coachLabel: { marginBottom: 8 },
-  currentPlanText: { marginTop: 6 },
+  currentPlanCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 14,
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 14,
+  },
+  currentPlanLabel: { marginBottom: 4 },
+  currentPlanTitle: { fontFamily: font.semibold, fontSize: 14, color: color.textPrimary, marginBottom: 2 },
+  chevron: { fontFamily: font.regular, fontSize: 18, color: color.textFaint },
   inviteRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   input: {
     backgroundColor: color.surface1,

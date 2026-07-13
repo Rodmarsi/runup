@@ -42,11 +42,15 @@ export interface WorkoutDayDto {
 }
 
 export interface CurrentPlanDto {
+  id: string;
   title: string;
   durationWeeks: number;
   createdAt: string;
   madeByCoach: boolean;
   coachName: string | null;
+  totalWorkouts: number;
+  workoutsPerWeek: number;
+  kindBreakdown: { kind: string; count: number }[];
 }
 
 export interface WorkoutCommentDto {
