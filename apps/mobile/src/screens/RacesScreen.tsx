@@ -14,7 +14,7 @@ import { ApiError, type RaceDto, type ExternalRaceDto } from "@runup/api-client"
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { localIsoDate, km } from "../format.js";
+import { localIsoDate, km, isoToBr } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 import { DateField } from "../components/DateField.js";
 
@@ -205,7 +205,7 @@ export function RacesScreen() {
               <Text style={text.muted}>
                 {[race.city, race.state].filter(Boolean).join(" — ")}
                 {race.city || race.state ? " · " : ""}
-                {race.raceDate.slice(0, 10)}
+                {isoToBr(race.raceDate.slice(0, 10))}
               </Text>
             </View>
             <Text style={[styles.countdown, race.isTarget && styles.targetCountdown]}>

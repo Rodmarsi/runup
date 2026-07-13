@@ -2,7 +2,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { color, border } from "@runup/ui/tokens";
 import type { WorkoutDayDto } from "@runup/api-client";
 import { font } from "../theme.js";
-import { km, pace } from "../format.js";
+import { km, pace, isoToBr } from "../format.js";
 
 function title(day: WorkoutDayDto): string {
   const run = day.blocks.flatMap((b) => b.items).find((i) => i.kind === "running");
@@ -21,7 +21,7 @@ function subtitle(day: WorkoutDayDto): string {
   if (run && run.kind === "running" && run.targetPaceSecPerKm) {
     return `pace ${pace(run.targetPaceSecPerKm)}/km`;
   }
-  return day.date.slice(0, 10);
+  return isoToBr(day.date.slice(0, 10));
 }
 
 function statusMark(status: WorkoutDayDto["status"]): { icon: string; color: string } {

@@ -5,11 +5,17 @@ import type { CreateShoeInput, UpdateShoeInput } from "./schemas.js";
 export class EquipmentService {
   constructor(private readonly db: PrismaClient) {}
 
-  listShoes(studentId: string) {
-    return this.db.shoe.findMany({
+  async listShoes(studentId: string) {
+    const shoes = await this.db.shoe.findMany({
       where: { studentId },
       orderBy: { createdAt: "desc" },
+      include: { logs: { select: { durationSeconds: true } } },
     });
+    return shoes.map(({ logs, ...shoe }) => ({
+      ...shoe,
+      runCount: logs.length,
+      totalTimeSeconds: logs.reduce((sum, l) => sum + (l.durationSeconds ?? 0), 0),
+    }));
   }
 
   createShoe(studentId: string, input: CreateShoeInput) {

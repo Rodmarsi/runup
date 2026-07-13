@@ -7,7 +7,10 @@ import type { PlanSlot } from "./slots.js";
 import type { PlanGenerator } from "./generator.js";
 import { SYSTEM_PROMPT, buildPrompt } from "./prompt.js";
 
-const MODEL = "claude-opus-4-8";
+// Sonnet em vez de Opus: geração estruturada de JSON não precisa do modelo
+// mais lento/caro — Opus levava ~50s pra um plano de 8 semanas em produção,
+// dando a impressão de tela travada no app.
+const MODEL = "claude-sonnet-5";
 
 export class ClaudePlanGenerator implements PlanGenerator {
   private readonly client: Anthropic;

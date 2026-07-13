@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@runup/db";
+import type { PrismaClient, Prisma } from "@runup/db";
 import type { Block, BlockKind } from "@runup/types";
 import { errors } from "../errors.js";
 import { GamificationService } from "../gamification/service.js";
@@ -229,6 +229,12 @@ export class PlanService {
   }
 
   /** Aluno registra a execução de um dia (check-in com feedback). */
+  /** Garante que o tênis é do aluno antes de somar km nele. */
+  private async requireOwnShoe(tx: Prisma.TransactionClient, studentId: string, shoeId: string) {
+    const shoe = await tx.shoe.findUnique({ where: { id: shoeId } });
+    if (!shoe || shoe.studentId !== studentId) throw errors.shoeNotFound();
+  }
+
   async logWorkout(studentId: string, dayId: string, input: LogWorkoutInput) {
     const day = await this.db.workoutDay.findUnique({
       where: { id: dayId },
@@ -243,6 +249,15 @@ export class PlanService {
         where: { id: dayId },
         data: { status: input.status },
       });
+      if (input.shoeId) {
+        await this.requireOwnShoe(tx, studentId, input.shoeId);
+        if (input.distanceMeters) {
+          await tx.shoe.update({
+            where: { id: input.shoeId },
+            data: { totalKm: { increment: input.distanceMeters / 1000 } },
+          });
+        }
+      }
       return tx.workoutLog.create({
         data: {
           workoutDayId: dayId,
@@ -258,6 +273,7 @@ export class PlanService {
           perceivedEffort: input.perceivedEffort,
           pain: input.pain,
           notes: input.notes,
+          shoeId: input.shoeId,
         },
       });
     });
@@ -267,17 +283,29 @@ export class PlanService {
 
   /** Treino avulso — o aluno registra algo que fez sem estar num dia de plano. */
   async logStandaloneWorkout(studentId: string, input: LogStandaloneWorkoutInput) {
-    const log = await this.db.workoutLog.create({
-      data: {
-        studentId,
-        source: "manual",
-        kind: input.kind,
-        distanceMeters: input.distanceMeters,
-        durationSeconds: input.durationSeconds,
-        perceivedEffort: input.perceivedEffort,
-        pain: input.pain,
-        notes: input.notes,
-      },
+    const log = await this.db.$transaction(async (tx) => {
+      if (input.shoeId) {
+        await this.requireOwnShoe(tx, studentId, input.shoeId);
+        if (input.distanceMeters) {
+          await tx.shoe.update({
+            where: { id: input.shoeId },
+            data: { totalKm: { increment: input.distanceMeters / 1000 } },
+          });
+        }
+      }
+      return tx.workoutLog.create({
+        data: {
+          studentId,
+          source: "manual",
+          kind: input.kind,
+          distanceMeters: input.distanceMeters,
+          durationSeconds: input.durationSeconds,
+          perceivedEffort: input.perceivedEffort,
+          pain: input.pain,
+          notes: input.notes,
+          shoeId: input.shoeId,
+        },
+      });
     });
     await this.gamification.onWorkoutLogged(studentId, log.distanceMeters);
     return log;

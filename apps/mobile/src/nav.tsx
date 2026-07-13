@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { BackHandler } from "react-native";
-import type { WorkoutLogDto, RaceDto } from "@runup/api-client";
+import type { WorkoutLogDto, RaceDto, ShoeDto } from "@runup/api-client";
 import type { RaceDistance } from "@runup/types";
 
 /** Preenchimento inicial do wizard de IA a partir de uma prova já cadastrada. */
@@ -30,6 +30,7 @@ export type Route =
   | { name: "chat"; linkId: string; withName: string }
   | { name: "bodyInfo" }
   | { name: "equipment" }
+  | { name: "shoeDetail"; shoe: ShoeDto }
   | { name: "settings" }
   | { name: "activity"; log: WorkoutLogDto }
   | { name: "analytics" }

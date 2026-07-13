@@ -288,13 +288,20 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
           </Pressable>
         )}
         {step === 2 && (
-          <Pressable onPress={generate} disabled={generating} style={styles.cta}>
-            {generating ? (
-              <ActivityIndicator color={color.ink} />
-            ) : (
-              <Text style={styles.ctaText}>Gerar plano</Text>
+          <>
+            {generating && (
+              <Text style={[text.muted, styles.generatingHint]}>
+                Isso pode levar até 1 minuto — a IA está montando o plano semana a semana.
+              </Text>
             )}
-          </Pressable>
+            <Pressable onPress={generate} disabled={generating} style={styles.cta}>
+              {generating ? (
+                <ActivityIndicator color={color.ink} />
+              ) : (
+                <Text style={styles.ctaText}>Gerar plano</Text>
+              )}
+            </Pressable>
+          </>
         )}
         {step === 3 && (
           <Pressable onPress={confirm} disabled={confirming} style={styles.cta}>
@@ -360,6 +367,7 @@ const styles = StyleSheet.create({
   },
   previewDate: { fontFamily: font.semibold, fontSize: 12, color: color.orange400, width: 44 },
   footer: { padding: 16, gap: 8 },
+  generatingHint: { textAlign: "center", fontSize: 12, marginBottom: 4 },
   cta: {
     alignItems: "center",
     paddingVertical: 14,

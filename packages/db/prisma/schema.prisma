@@ -409,6 +409,7 @@ model Shoe {
   name      String
   brand     String?
   model     String?
+  color     String?
   totalKm   Float        @default(0)
   // Limite de km a partir do qual o app avisa pra trocar de tênis (ex.: 600/800/1000).
   alertKm   Int?

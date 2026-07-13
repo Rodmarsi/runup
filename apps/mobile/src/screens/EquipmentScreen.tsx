@@ -14,16 +14,19 @@ import type { ShoeDto } from "@runup/api-client";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
+import { shoeProgressPct } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 
 export function EquipmentScreen() {
-  const { goHome } = useNav();
+  const { goHome, navigate } = useNav();
   const [shoes, setShoes] = useState<ShoeDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
+  const [model, setModel] = useState("");
+  const [shoeColor, setShoeColor] = useState("");
   const [alertKm, setAlertKm] = useState("600");
   const [saving, setSaving] = useState(false);
 
@@ -46,10 +49,14 @@ export function EquipmentScreen() {
       await api.createShoe({
         name: name.trim(),
         brand: brand.trim() || undefined,
+        model: model.trim() || undefined,
+        color: shoeColor.trim() || undefined,
         alertKm: alertKm ? Number(alertKm) : undefined,
       });
       setName("");
       setBrand("");
+      setModel("");
+      setShoeColor("");
       setAlertKm("600");
       setAdding(false);
       load();
@@ -58,25 +65,6 @@ export function EquipmentScreen() {
     } finally {
       setSaving(false);
     }
-  }
-
-  async function retire(shoe: ShoeDto) {
-    await api.updateShoe(shoe.id, { retired: !shoe.retiredAt });
-    load();
-  }
-
-  function remove(shoe: ShoeDto) {
-    Alert.alert("Remover tênis?", shoe.name, [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Remover",
-        style: "destructive",
-        onPress: async () => {
-          await api.deleteShoe(shoe.id);
-          load();
-        },
-      },
-    ]);
   }
 
   if (loading) {
@@ -100,82 +88,104 @@ export function EquipmentScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <Pressable onPress={goHome} style={styles.back}>
-        <Text style={styles.backText}>‹ Voltar</Text>
-      </Pressable>
-      <Text style={text.screenTitle}>Equipamentos</Text>
+      <View style={styles.titleRow}>
+        <Pressable onPress={goHome} style={styles.back}>
+          <Text style={styles.backText}>‹ Voltar</Text>
+        </Pressable>
+        <Pressable onPress={() => setAdding((v) => !v)}>
+          <Text style={styles.addLink}>{adding ? "fechar" : "Adicionar"}</Text>
+        </Pressable>
+      </View>
+      <Text style={text.screenTitle}>Meus tênis</Text>
 
-      {shoes.map((shoe) => {
-        const alertHit = shoe.alertKm !== null && shoe.totalKm >= shoe.alertKm;
-        return (
-          <View key={shoe.id} style={styles.card}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.shoeName}>
-                {shoe.name}
-                {shoe.retiredAt ? " · aposentado" : ""}
-              </Text>
-              <Text style={text.muted}>
-                {shoe.brand ? `${shoe.brand} · ` : ""}
-                {shoe.totalKm.toFixed(0)} km
-                {shoe.alertKm ? ` de ${shoe.alertKm} km` : ""}
-              </Text>
-              {alertHit && !shoe.retiredAt && (
-                <Text style={styles.alertText}>Hora de trocar — vida útil atingida.</Text>
-              )}
-            </View>
-            <Pressable onPress={() => retire(shoe)} style={styles.smallBtn}>
-              <Text style={styles.smallBtnText}>
-                {shoe.retiredAt ? "Reativar" : "Aposentar"}
-              </Text>
-            </Pressable>
-            <Pressable onPress={() => remove(shoe)} style={styles.smallBtn}>
-              <Text style={[styles.smallBtnText, styles.removeText]}>Remover</Text>
-            </Pressable>
-          </View>
-        );
-      })}
-
-      {shoes.length === 0 && (
-        <Text style={[text.secondary, styles.label]}>Nenhum tênis cadastrado ainda.</Text>
-      )}
-
-      {adding ? (
+      {adding && (
         <View style={styles.addCard}>
           <TextInput
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="Nome (ex.: Pegasus 40)"
+            placeholder="Nome (ex.: Speedzone)"
             placeholderTextColor={color.textFaint}
           />
-          <TextInput
-            style={styles.input}
-            value={brand}
-            onChangeText={setBrand}
-            placeholder="Marca (opcional)"
-            placeholderTextColor={color.textFaint}
-          />
-          <TextInput
-            style={styles.input}
-            value={alertKm}
-            onChangeText={setAlertKm}
-            keyboardType="numeric"
-            placeholder="Avisar em quantos km"
-            placeholderTextColor={color.textFaint}
-          />
-          <View style={styles.addRow}>
-            <Pressable onPress={() => setAdding(false)} style={styles.cancelBtn}>
-              <Text style={styles.cancelBtnText}>Cancelar</Text>
-            </Pressable>
-            <Pressable onPress={addShoe} disabled={saving} style={styles.saveBtn}>
-              <Text style={styles.saveBtnText}>{saving ? "..." : "Adicionar"}</Text>
-            </Pressable>
+          <View style={styles.row2}>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              value={brand}
+              onChangeText={setBrand}
+              placeholder="Marca"
+              placeholderTextColor={color.textFaint}
+            />
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              value={model}
+              onChangeText={setModel}
+              placeholder="Modelo"
+              placeholderTextColor={color.textFaint}
+            />
           </View>
+          <View style={styles.row2}>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              value={shoeColor}
+              onChangeText={setShoeColor}
+              placeholder="Cor"
+              placeholderTextColor={color.textFaint}
+            />
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              value={alertKm}
+              onChangeText={setAlertKm}
+              keyboardType="numeric"
+              placeholder="Avisar em quantos km"
+              placeholderTextColor={color.textFaint}
+            />
+          </View>
+          <Pressable onPress={addShoe} disabled={saving} style={styles.saveBtn}>
+            <Text style={styles.saveBtnText}>{saving ? "..." : "Adicionar tênis"}</Text>
+          </Pressable>
         </View>
-      ) : (
-        <Pressable onPress={() => setAdding(true)} style={styles.addBtn}>
-          <Text style={styles.addBtnText}>+ Adicionar tênis</Text>
-        </Pressable>
+      )}
+
+      {shoes.map((shoe) => {
+        const pct = shoeProgressPct(shoe);
+        const meta = [shoe.brand, shoe.model, shoe.color].filter(Boolean).join(" • ");
+        return (
+          <Pressable
+            key={shoe.id}
+            onPress={() => navigate({ name: "shoeDetail", shoe })}
+            style={styles.card}
+          >
+            <View style={styles.cardTop}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.shoeName}>{shoe.name}</Text>
+                {meta ? <Text style={text.muted}>{meta}</Text> : null}
+              </View>
+              <View style={[styles.statusPill, shoe.retiredAt && styles.statusPillRetired]}>
+                <Text style={[styles.statusText, shoe.retiredAt && styles.statusTextRetired]}>
+                  {shoe.retiredAt ? "Aposentado" : "Ativo"}
+                </Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </View>
+
+            {shoe.alertKm ? (
+              <>
+                <Text style={styles.kmLabel}>
+                  {shoe.totalKm.toFixed(0)}/{shoe.alertKm} km
+                </Text>
+                <View style={styles.track}>
+                  <View style={[styles.fill, { width: `${pct ?? 0}%` }, pct === 100 && styles.fillMax]} />
+                </View>
+              </>
+            ) : (
+              <Text style={styles.kmLabel}>{shoe.totalKm.toFixed(0)} km</Text>
+            )}
+          </Pressable>
+        );
+      })}
+
+      {shoes.length === 0 && !adding && (
+        <Text style={[text.secondary, styles.label]}>Nenhum tênis cadastrado ainda.</Text>
       )}
     </ScrollView>
   );
@@ -185,13 +195,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.surface0 },
   center: { justifyContent: "center", alignItems: "center" },
   scroll: { padding: 16, paddingBottom: 40 },
-  back: { marginBottom: 12 },
+  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  back: { marginBottom: 0 },
   backText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
+  addLink: { fontFamily: font.semibold, fontSize: 13, color: color.orange400 },
   label: { marginTop: 18 },
   card: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
     backgroundColor: color.surface2,
     borderRadius: 12,
     borderWidth: 1,
@@ -199,22 +208,24 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 14,
   },
-  shoeName: { fontFamily: font.semibold, fontSize: 14, color: color.textPrimary },
-  alertText: { fontFamily: font.medium, fontSize: 11, color: color.orange400, marginTop: 4 },
-  smallBtn: { paddingHorizontal: 10, paddingVertical: 6 },
-  smallBtnText: { fontFamily: font.medium, fontSize: 11, color: color.textSecondary },
-  removeText: { color: color.danger },
-  addBtn: {
-    marginTop: 20,
-    alignItems: "center",
-    paddingVertical: 12,
+  cardTop: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  shoeName: { fontFamily: font.semibold, fontSize: 15, color: color.textPrimary },
+  statusPill: {
+    backgroundColor: color.orangeDim,
     borderRadius: 99,
-    borderWidth: 1,
-    borderColor: border.strong,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  addBtnText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
+  statusPillRetired: { backgroundColor: color.surface3 },
+  statusText: { fontFamily: font.semibold, fontSize: 10, color: color.orange400 },
+  statusTextRetired: { color: color.textMuted },
+  chevron: { fontFamily: font.regular, fontSize: 18, color: color.textFaint },
+  kmLabel: { fontFamily: font.semibold, fontSize: 13, color: color.textSecondary, marginBottom: 6 },
+  track: { height: 6, borderRadius: 99, backgroundColor: color.surface4, overflow: "hidden" },
+  fill: { height: "100%", backgroundColor: color.orange500, borderRadius: 99 },
+  fillMax: { backgroundColor: color.danger },
   addCard: {
-    marginTop: 20,
+    marginTop: 16,
     backgroundColor: color.surface2,
     borderRadius: 12,
     borderWidth: 1,
@@ -222,6 +233,7 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 10,
   },
+  row2: { flexDirection: "row", gap: 10 },
   input: {
     backgroundColor: color.surface1,
     borderRadius: 10,
@@ -233,20 +245,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: color.textPrimary,
   },
-  addRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  cancelBtn: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 11,
-    borderRadius: 99,
-    borderWidth: 1,
-    borderColor: border.strong,
-  },
-  cancelBtnText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
   saveBtn: {
-    flex: 1,
     alignItems: "center",
-    paddingVertical: 11,
+    paddingVertical: 12,
     borderRadius: 99,
     backgroundColor: color.orange500,
   },

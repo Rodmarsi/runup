@@ -128,6 +128,7 @@ export interface LogWorkoutInput {
   perceivedEffort?: number;
   pain?: string;
   notes?: string;
+  shoeId?: string;
 }
 
 /** Treino avulso, sem estar ligado a um dia de um plano. */
@@ -138,6 +139,7 @@ export interface LogStandaloneWorkoutInput {
   perceivedEffort?: number;
   pain?: string;
   notes?: string;
+  shoeId?: string;
 }
 
 export interface ListWorkoutLogsQuery {
@@ -189,16 +191,20 @@ export interface ShoeDto {
   name: string;
   brand: string | null;
   model: string | null;
+  color: string | null;
   totalKm: number;
   alertKm: number | null;
   retiredAt: string | null;
   createdAt: string;
+  runCount: number;
+  totalTimeSeconds: number;
 }
 
 export interface CreateShoeInput {
   name: string;
   brand?: string;
   model?: string;
+  color?: string;
   alertKm?: number;
 }
 
@@ -206,6 +212,7 @@ export interface UpdateShoeInput {
   name?: string;
   brand?: string;
   model?: string;
+  color?: string;
   totalKm?: number;
   alertKm?: number;
   retired?: boolean;

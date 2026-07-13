@@ -56,6 +56,7 @@ export const logWorkoutSchema = z.object({
   perceivedEffort: z.number().int().min(1).max(10).optional(),
   pain: z.string().max(500).optional(),
   notes: z.string().max(2000).optional(),
+  shoeId: z.string().uuid().optional(),
 });
 
 const workoutLogKind = z.enum(["running", "strength", "mobility", "bike", "walk", "other"]);
@@ -68,6 +69,7 @@ export const logStandaloneWorkoutSchema = z.object({
   perceivedEffort: z.number().int().min(1).max(10).optional(),
   pain: z.string().max(500).optional(),
   notes: z.string().max(2000).optional(),
+  shoeId: z.string().uuid().optional(),
 });
 
 export const listWorkoutLogsQuerySchema = z.object({

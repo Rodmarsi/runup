@@ -27,7 +27,7 @@ import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { useAuth } from "../auth.js";
 import { useSettings } from "../settings.js";
-import { duration, distance, unitLabel, localIsoDate } from "../format.js";
+import { duration, distance, unitLabel, localIsoDate, isoToBr } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 import { DateField } from "../components/DateField.js";
 
@@ -360,7 +360,7 @@ export function ProfileScreen() {
                 <Text style={styles.rowTitle}>
                   {g.raceName ?? RACE_LABEL[g.targetRace]}
                 </Text>
-                <Text style={text.muted}>{g.raceDate.slice(0, 10)}</Text>
+                <Text style={text.muted}>{isoToBr(g.raceDate.slice(0, 10))}</Text>
               </View>
               <Text style={styles.chevron}>›</Text>
             </Pressable>

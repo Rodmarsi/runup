@@ -1,5 +1,16 @@
 import type { Block } from "@runup/types";
 
+interface ShoeWear {
+  totalKm: number;
+  alertKm: number | null;
+}
+
+/** % de desgaste até o km de alerta — null quando o tênis não tem alerta configurado. */
+export function shoeProgressPct(shoe: ShoeWear): number | null {
+  if (!shoe.alertKm) return null;
+  return Math.min(100, Math.round((shoe.totalKm / shoe.alertKm) * 100));
+}
+
 /**
  * Data (YYYY-MM-DD) no fuso horário LOCAL do aparelho — nunca use
  * `Date#toISOString()` para "hoje": ele converte para UTC, então perto da

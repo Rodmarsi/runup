@@ -12,7 +12,7 @@ import type { GoalOverview } from "@runup/api-client";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { duration } from "../format.js";
+import { duration, isoToBr } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 
 const RACE_LABEL: Record<string, string> = {
@@ -77,7 +77,7 @@ export function GoalScreen({ goalId }: { goalId: string }) {
         {goal.raceName ?? RACE_LABEL[goal.targetRace]}
       </Text>
       <Text style={[text.muted, styles.raceMeta]}>
-        {RACE_LABEL[goal.targetRace]} · {goal.raceDate.slice(0, 10)}
+        {RACE_LABEL[goal.targetRace]} · {isoToBr(goal.raceDate.slice(0, 10))}
       </Text>
       <View style={styles.metaRow}>
         <MetaCard label="Faltam" value={`${goal.daysUntilRace}`} unit="dias" />

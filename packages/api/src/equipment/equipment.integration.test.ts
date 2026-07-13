@@ -97,4 +97,54 @@ describe("equipamentos (tênis)", () => {
     });
     expect(res.statusCode).toBe(404);
   });
+
+  it("registrar um treino com tênis soma km e aparece nas estatísticas do tênis", async () => {
+    const s = await register("student", "shoe-log@runup.app");
+    const shoe = await app.inject({
+      method: "POST",
+      url: "/me/shoes",
+      headers: auth(s.token),
+      payload: { name: "Speedzone", brand: "Fila", model: "Racer speedzone", color: "Laranja" },
+    });
+    const shoeId = shoe.json().id as string;
+
+    await app.inject({
+      method: "POST",
+      url: "/me/workout-logs",
+      headers: auth(s.token),
+      payload: { kind: "running", distanceMeters: 5000, durationSeconds: 1500, shoeId },
+    });
+
+    const listed = await app.inject({
+      method: "GET",
+      url: "/me/shoes",
+      headers: auth(s.token),
+    });
+    expect(listed.json()[0]).toMatchObject({
+      totalKm: 5,
+      runCount: 1,
+      totalTimeSeconds: 1500,
+      color: "Laranja",
+    });
+  });
+
+  it("não soma km num tênis de outro aluno (404)", async () => {
+    const a = await register("student", "shoe-log-a@runup.app");
+    const b = await register("student", "shoe-log-b@runup.app");
+    const shoe = await app.inject({
+      method: "POST",
+      url: "/me/shoes",
+      headers: auth(a.token),
+      payload: { name: "Vaporfly" },
+    });
+    const shoeId = shoe.json().id as string;
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/me/workout-logs",
+      headers: auth(b.token),
+      payload: { kind: "running", distanceMeters: 5000, shoeId },
+    });
+    expect(res.statusCode).toBe(404);
+  });
 });

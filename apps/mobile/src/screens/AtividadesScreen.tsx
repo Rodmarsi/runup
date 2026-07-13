@@ -6,7 +6,7 @@ import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { useSettings } from "../settings.js";
-import { distance, unitLabel, paceForUnits, paceUnitLabel } from "../format.js";
+import { distance, unitLabel, paceForUnits, paceUnitLabel, isoToBr } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 
 const KIND_LABEL: Record<WorkoutLogKind, string> = {
@@ -90,7 +90,7 @@ export function AtividadesScreen() {
         >
           <View style={{ flex: 1 }}>
             <Text style={styles.rowTitle}>{KIND_LABEL[log.kind]}</Text>
-            <Text style={text.muted}>{log.completedAt.slice(0, 10)}</Text>
+            <Text style={text.muted}>{isoToBr(log.completedAt.slice(0, 10))}</Text>
           </View>
           <View style={styles.rowMetrics}>
             <Text style={styles.rowValue}>

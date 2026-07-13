@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { color, border } from "@runup/ui/tokens";
 import type { WorkoutDayStatus } from "@runup/types";
-import { ApiError } from "@runup/api-client";
+import { ApiError, type ShoeDto } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
@@ -33,8 +33,14 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
   const [rpe, setRpe] = useState<number | null>(null);
   const [pain, setPain] = useState<string | null>("Nenhuma");
   const [notes, setNotes] = useState("");
+  const [shoes, setShoes] = useState<ShoeDto[]>([]);
+  const [shoeId, setShoeId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.shoes().then((all) => setShoes(all.filter((s) => !s.retiredAt))).catch(() => {});
+  }, []);
 
   async function save() {
     setBusy(true);
@@ -49,6 +55,7 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
         perceivedEffort: rpe ?? undefined,
         pain: pain && pain !== "Nenhuma" ? pain : undefined,
         notes: notes.trim() || undefined,
+        shoeId: shoeId ?? undefined,
       });
       Alert.alert("Treino registrado!", "Seu treino foi salvo com sucesso.", [
         { text: "OK", onPress: goHome },
@@ -110,6 +117,26 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
             />
           </View>
         </View>
+
+        {shoes.length > 0 && (
+          <>
+            <Text style={[text.overline, styles.label]}>TÊNIS (OPCIONAL)</Text>
+            <View style={styles.chips}>
+              {shoes.map((s) => {
+                const active = shoeId === s.id;
+                return (
+                  <Pressable
+                    key={s.id}
+                    onPress={() => setShoeId(active ? null : s.id)}
+                    style={[styles.painChip, active && styles.painActive]}
+                  >
+                    <Text style={active ? styles.painActiveText : styles.painText}>{s.name}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         <Text style={[text.overline, styles.label]}>ESFORÇO PERCEBIDO (RPE)</Text>
         <View style={styles.chips}>

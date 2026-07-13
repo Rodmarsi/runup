@@ -7,7 +7,7 @@ import type { RaceDistance } from "@runup/types";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { km, duration } from "../format.js";
+import { km, duration, isoToBr } from "../format.js";
 
 const STATUS_LABEL: Record<RaceStatus, string> = {
   interested: "Interessado",
@@ -92,7 +92,7 @@ export function RaceDetailScreen({ race }: { race: RaceDto }) {
       <Text style={[text.secondary, styles.subtitle]}>
         {[race.city, race.state].filter(Boolean).join(" — ")}
         {race.city || race.state ? " · " : ""}
-        {race.raceDate.slice(0, 10)}
+        {isoToBr(race.raceDate.slice(0, 10))}
         {race.startTime ? ` · largada ${race.startTime}` : ""}
       </Text>
 

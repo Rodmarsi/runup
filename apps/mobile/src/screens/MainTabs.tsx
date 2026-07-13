@@ -13,6 +13,7 @@ import { RaceDetailScreen } from "./RaceDetailScreen.js";
 import { AnalisesScreen } from "./AnalisesScreen.js";
 import { BodyInfoScreen } from "./BodyInfoScreen.js";
 import { EquipmentScreen } from "./EquipmentScreen.js";
+import { ShoeDetailScreen } from "./ShoeDetailScreen.js";
 import { SettingsScreen } from "./SettingsScreen.js";
 import { ActivityDetailScreen } from "./ActivityDetailScreen.js";
 
@@ -55,6 +56,8 @@ export function MainTabs() {
           <BodyInfoScreen />
         ) : route.name === "equipment" ? (
           <EquipmentScreen />
+        ) : route.name === "shoeDetail" ? (
+          <ShoeDetailScreen shoe={route.shoe} />
         ) : route.name === "settings" ? (
           <SettingsScreen />
         ) : route.name === "activity" ? (
