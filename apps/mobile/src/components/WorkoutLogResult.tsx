@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { color, border } from "@runup/ui/tokens";
 import type { WorkoutLogDto } from "@runup/api-client";
 import { text, font } from "../theme.js";
+import { RouteMap } from "./RouteMap.js";
 import {
   pace,
   duration,
@@ -13,10 +14,12 @@ import {
   type Units,
 } from "../format.js";
 
-/** Card com o resultado real de um treino (distância/tempo/pace, splits, feedback). */
+/** Card com o resultado real de um treino (mapa, distância/tempo/pace, splits, feedback). */
 export function WorkoutLogResult({ log, units }: { log: WorkoutLogDto; units: Units }) {
   return (
     <View style={[styles.card, styles.resultCard]}>
+      {log.stravaName && <Text style={styles.stravaName}>{log.stravaName}</Text>}
+      {log.mapPolyline && <RouteMap polyline={log.mapPolyline} />}
       <View style={styles.resultRow}>
         <View style={styles.resultCol}>
           <Text style={text.muted}>Distância</Text>
@@ -102,6 +105,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   resultCard: { marginBottom: 8, gap: 4 },
+  stravaName: { fontFamily: font.semibold, fontSize: 14, color: color.textPrimary, marginBottom: 8 },
   resultRow: { flexDirection: "row", justifyContent: "space-between" },
   secondRow: { marginTop: 10 },
   resultCol: { flex: 1 },

@@ -13,6 +13,7 @@ interface TokenResponse {
 
 interface ActivityResponse {
   id: number;
+  name?: string;
   type: string;
   start_date: string;
   distance: number;
@@ -20,6 +21,7 @@ interface ActivityResponse {
   average_heartrate?: number;
   average_cadence?: number;
   total_elevation_gain?: number;
+  map?: { summary_polyline?: string };
 }
 
 /** Implementação real do cliente Strava (OAuth + REST v3). */
@@ -76,6 +78,7 @@ export class HttpStravaClient implements StravaClient {
       .filter((a) => a.type === "Run")
       .map((a) => ({
         id: String(a.id),
+        name: a.name,
         startDate: a.start_date,
         distanceMeters: Math.round(a.distance),
         movingTimeSeconds: a.moving_time,
@@ -88,6 +91,7 @@ export class HttpStravaClient implements StravaClient {
         totalElevationGainMeters: a.total_elevation_gain
           ? Math.round(a.total_elevation_gain)
           : undefined,
+        mapPolyline: a.map?.summary_polyline || undefined,
       }));
   }
 

@@ -123,8 +123,8 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Cabeçalho */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Pressable onPress={onOpenProfile} style={styles.avatar}>
+          <Pressable onPress={onOpenProfile} style={styles.headerLeft}>
+            <View style={styles.avatar}>
               {user?.avatarUrl ? (
                 <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
               ) : (
@@ -132,12 +132,12 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
                   {user?.name.charAt(0).toUpperCase() ?? "?"}
                 </Text>
               )}
-            </Pressable>
+            </View>
             <View>
               <Text style={text.muted}>{greeting()},</Text>
               <Text style={text.cardTitle}>{user?.name ?? ""}</Text>
             </View>
-          </View>
+          </Pressable>
           <View style={styles.streak}>
             <Text style={styles.streakText}>🔥 {stats?.streakDays ?? 0}</Text>
           </View>

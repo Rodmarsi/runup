@@ -16,7 +16,7 @@ import type { RaceDistance } from "@runup/types";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav, type AiPlanPrefill } from "../nav.js";
-import { localIsoDate, parsePace, summarizePlanDays } from "../format.js";
+import { localIsoDate, parsePace, summarizePlanDays, weeksUntil } from "../format.js";
 import { DateField } from "../components/DateField.js";
 
 const RACE_LABEL: Record<RaceDistance, string> = {
@@ -53,6 +53,10 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
   const [weekdays, setWeekdays] = useState<number[]>([1, 3, 6]);
   const [durationWeeks, setDurationWeeks] = useState(8);
 
+  // Com prova alvo definida, a duração do plano vem da data — sem pílula manual.
+  const raceWeeks =
+    targetRace && raceDate ? Math.min(24, weeksUntil(localIsoDate(), raceDate)) : null;
+
   const [generating, setGenerating] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +79,7 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
         targetRace,
         raceDate: raceDate || undefined,
         availableWeekdays: weekdays,
-        durationWeeks,
+        durationWeeks: raceWeeks ?? durationWeeks,
         startDate: localIsoDate(),
         experience,
         bestPaceSecPerKm: parsePace(bestPace),
@@ -236,19 +240,31 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
             </View>
 
             <Text style={[text.overline, styles.label]}>DURAÇÃO DO PLANO</Text>
-            <View style={styles.chips}>
-              {DURATIONS.map((w) => (
-                <Pressable
-                  key={w}
-                  onPress={() => setDurationWeeks(w)}
-                  style={[styles.chip, durationWeeks === w && styles.chipActive]}
-                >
-                  <Text style={durationWeeks === w ? styles.chipTextActive : styles.chipText}>
-                    {w} semanas
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            {raceWeeks !== null ? (
+              <Text style={text.secondary}>
+                {raceWeeks} semana{raceWeeks > 1 ? "s" : ""} até a prova — calculado automaticamente
+                a partir da data.
+              </Text>
+            ) : (
+              <>
+                <View style={styles.chips}>
+                  {DURATIONS.map((w) => (
+                    <Pressable
+                      key={w}
+                      onPress={() => setDurationWeeks(w)}
+                      style={[styles.chip, durationWeeks === w && styles.chipActive]}
+                    >
+                      <Text style={durationWeeks === w ? styles.chipTextActive : styles.chipText}>
+                        {w} semanas
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text style={[text.muted, styles.hint]}>
+                  Defina uma prova alvo no passo 1 pra calcular isso automaticamente.
+                </Text>
+              </>
+            )}
 
             {error && <Text style={styles.error}>{error}</Text>}
           </>
@@ -329,6 +345,7 @@ const styles = StyleSheet.create({
   backText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
   stepIndicator: { marginTop: 4, marginBottom: 8 },
   label: { marginTop: 18, marginBottom: 8 },
+  hint: { marginTop: 8, fontSize: 12 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   chip: {
     paddingHorizontal: 14,

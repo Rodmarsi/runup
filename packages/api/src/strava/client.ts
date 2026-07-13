@@ -10,12 +10,15 @@ export interface StravaTokens {
 /** Atividade do Strava (subconjunto que usamos). */
 export interface StravaActivity {
   id: string;
+  name?: string;
   startDate: string;
   distanceMeters: number;
   movingTimeSeconds: number;
   averageHeartrate?: number;
   averageCadence?: number;
   totalElevationGainMeters?: number;
+  /** Traçado da corrida (encoded polyline) — já vem na listagem, sem 2ª chamada. */
+  mapPolyline?: string;
 }
 
 /**

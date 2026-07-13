@@ -264,6 +264,10 @@ model WorkoutLog {
   caloriesKcal      Int?
   // Texto livre (ex.: "22°C, ensolarado") — sem integração com provedor de clima ainda.
   weather           String?
+  // Nome da atividade no Strava (ex.: "Corrida matinal") — só quando vem de lá.
+  stravaName        String?
+  // Traçado da corrida, no formato encoded polyline do Google/Strava.
+  mapPolyline       String?
   shoe              Shoe?            @relation(fields: [shoeId], references: [id])
   shoeId            String?
   perceivedEffort   Int?

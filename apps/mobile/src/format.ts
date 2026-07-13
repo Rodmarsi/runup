@@ -47,6 +47,15 @@ export function km(meters: number): string {
   return (meters / 1000).toFixed(1).replace(".", ",");
 }
 
+/** Semanas (arredondado pra cima, mínimo 1) entre duas datas ISO — usado pra prova alvo. */
+export function weeksUntil(fromIso: string, toIso: string): number {
+  const [fy, fm, fd] = fromIso.split("-").map(Number) as [number, number, number];
+  const [ty, tm, td] = toIso.split("-").map(Number) as [number, number, number];
+  const from = new Date(fy, fm - 1, fd).getTime();
+  const to = new Date(ty, tm - 1, td).getTime();
+  return Math.max(1, Math.ceil((to - from) / (7 * 86_400_000)));
+}
+
 /** "5:30" → 330 segundos. */
 export function parsePace(text: string): number | undefined {
   const m = text.match(/^(\d+):(\d{2})$/);

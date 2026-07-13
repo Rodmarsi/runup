@@ -17,13 +17,13 @@ import { ShoeDetailScreen } from "./ShoeDetailScreen.js";
 import { SettingsScreen } from "./SettingsScreen.js";
 import { ActivityDetailScreen } from "./ActivityDetailScreen.js";
 
-type Tab = "hoje" | "plano" | "atividades" | "perfil";
+type Tab = "hoje" | "plano" | "atividades" | "analises" | "perfil";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "hoje", label: "Hoje" },
   { key: "plano", label: "Plano" },
   { key: "atividades", label: "Atividades" },
-  { key: "perfil", label: "Perfil" },
+  { key: "analises", label: "Análises" },
 ];
 
 /**
@@ -50,8 +50,6 @@ export function MainTabs() {
           <RacesScreen />
         ) : route.name === "raceDetail" ? (
           <RaceDetailScreen race={route.race} />
-        ) : route.name === "analytics" ? (
-          <AnalisesScreen />
         ) : route.name === "bodyInfo" ? (
           <BodyInfoScreen />
         ) : route.name === "equipment" ? (
@@ -67,6 +65,7 @@ export function MainTabs() {
             {tab === "hoje" && <HomeScreen onOpenProfile={() => selectTab("perfil")} />}
             {tab === "plano" && <PlanoScreen />}
             {tab === "atividades" && <AtividadesScreen />}
+            {tab === "analises" && <AnalisesScreen />}
             {tab === "perfil" && <ProfileScreen />}
           </>
         )}

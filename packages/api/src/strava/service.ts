@@ -185,6 +185,8 @@ export class StravaService {
         avgHeartRate: activity.averageHeartrate,
         cadence: activity.averageCadence,
         elevationGainM: activity.totalElevationGainMeters,
+        stravaName: activity.name,
+        mapPolyline: activity.mapPolyline,
       },
     });
   }

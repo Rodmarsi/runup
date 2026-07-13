@@ -18,8 +18,9 @@ describe("computeStreak", () => {
     expect(computeStreak([d("2026-07-05"), d("2026-07-06")], today)).toBe(2);
   });
 
-  it("quebra se o último dia foi anteontem", () => {
-    expect(computeStreak([d("2026-07-04"), d("2026-07-05")], today)).toBe(0);
+  it("não quebra com dias de descanso normais do plano (ex.: seg/qua/sáb)", () => {
+    // treinou sáb (04) e seg (06); hoje é ter (07) — 2 dias de folga no meio.
+    expect(computeStreak([d("2026-07-04"), d("2026-07-06")], today)).toBe(2);
   });
 
   it("ignora múltiplas atividades no mesmo dia", () => {
@@ -27,8 +28,18 @@ describe("computeStreak", () => {
     expect(computeStreak(dates, today)).toBe(2);
   });
 
-  it("para na primeira lacuna", () => {
-    const dates = [d("2026-07-07"), d("2026-07-06"), d("2026-07-03")];
+  it("tolera intervalos de até 4 dias entre treinos", () => {
+    // 01 → 05: 4 dias de intervalo, ainda dentro da folga.
+    expect(computeStreak([d("2026-07-01"), d("2026-07-05")], today)).toBe(2);
+  });
+
+  it("quebra a sequência quando o intervalo passa de 5 dias", () => {
+    // 01 → 07: 6 dias sem treinar — streak zera.
+    expect(computeStreak([d("2026-07-01")], today)).toBe(0);
+  });
+
+  it("conta só o trecho recente quando há um intervalo grande no meio", () => {
+    const dates = [d("2026-06-01"), d("2026-07-03"), d("2026-07-07")];
     expect(computeStreak(dates, today)).toBe(2);
   });
 });

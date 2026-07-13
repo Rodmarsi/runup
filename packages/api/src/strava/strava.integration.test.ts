@@ -175,10 +175,12 @@ describe("conexão e sync do Strava", () => {
     fake.activities = [
       {
         id: "act-1",
+        name: "Corrida matinal",
         startDate: "2026-07-07T09:00:00.000Z",
         distanceMeters: 10000,
         movingTimeSeconds: 2832,
         averageHeartrate: 155,
+        mapPolyline: "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
       },
     ];
 
@@ -196,6 +198,17 @@ describe("conexão e sync do Strava", () => {
       headers: auth(student.token),
     });
     expect(cal.json()[0].status).toBe("done");
+
+    // Nome e traçado da corrida vieram do Strava junto com o resto.
+    const logs = await app.inject({
+      method: "GET",
+      url: "/me/workout-logs",
+      headers: auth(student.token),
+    });
+    expect(logs.json()[0]).toMatchObject({
+      stravaName: "Corrida matinal",
+      mapPolyline: "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
+    });
 
     // Re-sync não duplica (dedupe por stravaActivityId).
     const resync = await app.inject({

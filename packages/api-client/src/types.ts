@@ -83,6 +83,8 @@ export interface WorkoutLogDto {
   perceivedEffort: number | null;
   pain: string | null;
   notes: string | null;
+  stravaName: string | null;
+  mapPolyline: string | null;
 }
 
 export interface WorkoutDayDetailDto extends WorkoutDayDto {

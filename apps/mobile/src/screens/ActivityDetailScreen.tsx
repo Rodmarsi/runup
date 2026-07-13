@@ -78,7 +78,7 @@ export function ActivityDetailScreen({ log }: { log: WorkoutLogDto }) {
       )}
 
       <Text style={[text.muted, styles.note]}>
-        Mapa, fotos e compartilhamento chegam numa próxima etapa.
+        Fotos e compartilhamento ainda não estão disponíveis.
       </Text>
     </ScrollView>
   );

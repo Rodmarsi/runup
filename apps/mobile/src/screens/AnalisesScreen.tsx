@@ -4,7 +4,6 @@ import { color, border } from "@runup/ui/tokens";
 import type { WorkoutLogDto, WorkoutDayDto, Stats, RacePredictionDto } from "@runup/api-client";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
-import { useNav } from "../nav.js";
 import { useSettings } from "../settings.js";
 import { distance, unitLabel, duration } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
@@ -50,7 +49,6 @@ function periodSummary(logs: WorkoutLogDto[], days: Period) {
 }
 
 export function AnalisesScreen() {
-  const { goHome } = useNav();
   const { units } = useSettings();
   const [logs, setLogs] = useState<WorkoutLogDto[]>([]);
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
@@ -88,9 +86,6 @@ export function AnalisesScreen() {
   if (error) {
     return (
       <View style={[styles.container, styles.scroll]}>
-        <Pressable onPress={goHome} style={styles.back}>
-          <Text style={styles.backText}>‹ Voltar</Text>
-        </Pressable>
         <LoadError onRetry={load} />
       </View>
     );
@@ -104,9 +99,6 @@ export function AnalisesScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <Pressable onPress={goHome} style={styles.back}>
-        <Text style={styles.backText}>‹ Voltar</Text>
-      </Pressable>
       <Text style={text.screenTitle}>Análises</Text>
 
       <Text style={[text.overline, styles.label]}>KM POR SEMANA</Text>
@@ -191,8 +183,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.surface0 },
   center: { justifyContent: "center", alignItems: "center" },
   scroll: { padding: 16, paddingBottom: 40 },
-  back: { marginBottom: 12 },
-  backText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
   label: { marginTop: 20, marginBottom: 8 },
   card: {
     backgroundColor: color.surface2,

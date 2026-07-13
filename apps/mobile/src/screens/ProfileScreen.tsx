@@ -378,6 +378,7 @@ export function ProfileScreen() {
             <View key={pr.id} style={styles.prCard}>
               <Text style={text.muted}>{RACE_LABEL[pr.distance] ?? pr.distance}</Text>
               <Text style={styles.prTime}>{duration(pr.timeSeconds)}</Text>
+              <Text style={styles.prDate}>{isoToBr(pr.achievedAt.slice(0, 10))}</Text>
             </View>
           ))}
         </View>
@@ -528,10 +529,6 @@ export function ProfileScreen() {
         <Text style={[styles.rowTitle, { flex: 1 }]}>Provas</Text>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
-      <Pressable onPress={() => navigate({ name: "analytics" })} style={styles.rowCard}>
-        <Text style={[styles.rowTitle, { flex: 1 }]}>Análises</Text>
-        <Text style={styles.chevron}>›</Text>
-      </Pressable>
       <Pressable onPress={() => navigate({ name: "bodyInfo" })} style={styles.rowCard}>
         <Text style={[styles.rowTitle, { flex: 1 }]}>Informações</Text>
         <Text style={styles.chevron}>›</Text>
@@ -626,6 +623,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   prTime: { fontFamily: font.bold, fontSize: 18, color: color.textPrimary, marginTop: 4 },
+  prDate: { fontFamily: font.regular, fontSize: 11, color: color.textFaint, marginTop: 2 },
   levelCard: {
     backgroundColor: color.surface2,
     borderRadius: 12,
