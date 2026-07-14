@@ -1,4 +1,6 @@
-const { withMainActivity, mergeContents } = require("@expo/config-plugins");
+const { withMainActivity } = require("@expo/config-plugins");
+// Não é reexportado no índice público do pacote, só no submódulo.
+const { mergeContents } = require("@expo/config-plugins/build/utils/generateCode");
 
 /**
  * O plugin oficial do react-native-health-connect só mexe no
