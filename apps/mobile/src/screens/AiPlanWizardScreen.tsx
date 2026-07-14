@@ -44,6 +44,7 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
   const [objective, setObjective] = useState(prefill?.objective ?? "");
   const [targetRace, setTargetRace] = useState<RaceDistance | undefined>(prefill?.targetRace);
   const [raceDate, setRaceDate] = useState(prefill?.raceDate ?? "");
+  const [customDistanceKm, setCustomDistanceKm] = useState("");
 
   const [experience, setExperience] = useState<ExperienceLevel>("beginner");
   const [bestPace, setBestPace] = useState("");
@@ -74,8 +75,12 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
     setGenerating(true);
     setError(null);
     try {
+      const customDistanceNote =
+        targetRace === "other" && customDistanceKm.trim()
+          ? ` Prova alvo: ${customDistanceKm.trim().replace(".", ",")} km.`
+          : "";
       const result = await api.generateAiPlan({
-        objective: objective.trim() || "Melhorar o condicionamento",
+        objective: (objective.trim() || "Melhorar o condicionamento") + customDistanceNote,
         targetRace,
         raceDate: raceDate || undefined,
         availableWeekdays: weekdays,
@@ -162,6 +167,16 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
                 </Pressable>
               ))}
             </View>
+            {targetRace === "other" && (
+              <TextInput
+                style={[styles.input, { marginTop: 8 }]}
+                value={customDistanceKm}
+                onChangeText={setCustomDistanceKm}
+                keyboardType="decimal-pad"
+                placeholder="Distância da prova (km)"
+                placeholderTextColor={color.textMuted}
+              />
+            )}
             {targetRace && (
               <DateField
                 value={raceDate}

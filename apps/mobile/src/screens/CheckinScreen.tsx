@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { color, border } from "@runup/ui/tokens";
-import type { WorkoutDayStatus } from "@runup/types";
+import type { WorkoutDayStatus, Block } from "@runup/types";
 import { ApiError, type ShoeDto } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { api } from "../api.js";
@@ -25,10 +25,17 @@ const STATUSES: { label: string; value: WorkoutDayStatus }[] = [
 ];
 const PAINS = ["Nenhuma", "Joelho", "Panturrilha", "Canela", "Outro"];
 const RPE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const KIND_LABEL: Record<Block["kind"], string> = {
+  running: "Corrida",
+  strength: "Musculação",
+  mobility: "Mobilidade",
+  free: "Treino",
+};
 
 export function CheckinScreen({ dayId }: { dayId: string }) {
   const { goHome } = useNav();
   const [status, setStatus] = useState<WorkoutDayStatus>("done");
+  const [dayKind, setDayKind] = useState<Block["kind"]>("running");
   const [distanceKm, setDistanceKm] = useState("");
   const [durationText, setDurationText] = useState("");
   const [rpe, setRpe] = useState<number | null>(null);
@@ -41,13 +48,25 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
 
   useEffect(() => {
     api.shoes().then((all) => setShoes(all.filter((s) => !s.retiredAt))).catch(() => {});
-  }, []);
+    api
+      .workoutDay(dayId)
+      .then((day) => {
+        const main = day.blocks.find((b) => b.role === "main") ?? day.blocks[0];
+        if (main) setDayKind(main.kind);
+      })
+      .catch(() => {});
+  }, [dayId]);
+
+  const isRunning = dayKind === "running";
 
   async function save() {
     setBusy(true);
     setError(null);
     try {
-      const distance = distanceKm ? Math.round(parseFloat(distanceKm.replace(",", ".")) * 1000) : undefined;
+      const distance =
+        isRunning && distanceKm
+          ? Math.round(parseFloat(distanceKm.replace(",", ".")) * 1000)
+          : undefined;
       const duration = durationText ? parseTimeInput(durationText) : undefined;
       await api.logWorkout(dayId, {
         status,
@@ -56,7 +75,7 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
         perceivedEffort: rpe ?? undefined,
         pain: pain && pain !== "Nenhuma" ? pain : undefined,
         notes: notes.trim() || undefined,
-        shoeId: shoeId ?? undefined,
+        shoeId: isRunning ? (shoeId ?? undefined) : undefined,
       });
       Alert.alert("Treino registrado!", "Seu treino foi salvo com sucesso.", [
         { text: "OK", onPress: goHome },
@@ -75,6 +94,7 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
           <Text style={styles.backText}>‹ Cancelar</Text>
         </Pressable>
         <Text style={text.screenTitle}>Registrar treino</Text>
+        <Text style={[text.secondary, styles.subtitle]}>{KIND_LABEL[dayKind]}</Text>
 
         <Text style={[text.overline, styles.label]}>COMO FOI?</Text>
         <View style={styles.segment}>
@@ -95,17 +115,19 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
         </View>
 
         <View style={styles.dataRow}>
-          <View style={styles.dataCol}>
-            <Text style={[text.overline, styles.label]}>DISTÂNCIA (KM)</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="decimal-pad"
-              placeholder="6,5"
-              placeholderTextColor={color.textMuted}
-              value={distanceKm}
-              onChangeText={setDistanceKm}
-            />
-          </View>
+          {isRunning && (
+            <View style={styles.dataCol}>
+              <Text style={[text.overline, styles.label]}>DISTÂNCIA (KM)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="decimal-pad"
+                placeholder="6,5"
+                placeholderTextColor={color.textMuted}
+                value={distanceKm}
+                onChangeText={setDistanceKm}
+              />
+            </View>
+          )}
           <View style={styles.dataCol}>
             <Text style={[text.overline, styles.label]}>TEMPO</Text>
             <TextInput
@@ -119,7 +141,7 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
           </View>
         </View>
 
-        {shoes.length > 0 && (
+        {isRunning && shoes.length > 0 && (
           <>
             <Text style={[text.overline, styles.label]}>TÊNIS (OPCIONAL)</Text>
             <View style={styles.chips}>
@@ -209,6 +231,7 @@ const styles = StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 24 },
   back: { marginBottom: 8 },
   backText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
+  subtitle: { marginTop: 2 },
   label: { marginTop: 16, marginBottom: 6 },
   segment: { flexDirection: "row", gap: 6 },
   seg: {

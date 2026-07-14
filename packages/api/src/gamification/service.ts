@@ -133,11 +133,21 @@ export class GamificationService {
     // Garante que a missão do período atual exista mesmo sem log novo hoje.
     await this.bumpMissions(studentId, now);
 
+    // A missão diária cria uma linha por dia (targetDate = aquele dia) — sem
+    // restringir ao dia/semana vigentes, um `gte: startOfWeek` traz também
+    // as linhas de dias anteriores da mesma semana, duplicando "Registrar um
+    // treino hoje" na tela pra quem treinou em mais de um dia.
     const [progress, achievements, missions] = await Promise.all([
       this.db.athleteProgress.findUnique({ where: { studentId } }),
       this.db.achievement.findMany({ where: { studentId } }),
       this.db.mission.findMany({
-        where: { studentId, targetDate: { gte: startOfWeek(now) } },
+        where: {
+          studentId,
+          OR: [
+            { period: "daily", targetDate: startOfDay(now) },
+            { period: "weekly", targetDate: startOfWeek(now) },
+          ],
+        },
         orderBy: { targetDate: "desc" },
       }),
     ]);

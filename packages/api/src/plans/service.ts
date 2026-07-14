@@ -1,5 +1,5 @@
 import type { PrismaClient, Prisma } from "@runup/db";
-import type { Block, BlockKind } from "@runup/types";
+import type { Block, BlockKind, WorkoutLogKind } from "@runup/types";
 import { errors } from "../errors.js";
 import { GamificationService } from "../gamification/service.js";
 import { NotificationService } from "../notifications/service.js";
@@ -12,6 +12,38 @@ import type {
   UpdateDayInput,
   DuplicateDayInput,
 } from "./schemas.js";
+
+/** "free" não existe como WorkoutLogKind — cai em "other". */
+const BLOCK_KIND_TO_LOG_KIND: Record<BlockKind, WorkoutLogKind> = {
+  running: "running",
+  strength: "strength",
+  mobility: "mobility",
+  free: "other",
+};
+
+/**
+ * Tipo do treino registrado a partir do bloco principal do dia planejado —
+ * sem isso, o check-in de um dia de academia/mobilidade ficava marcado como
+ * "running" (default do schema), inflando pace/distância que não existem.
+ */
+function logKindForDay(blocksJson: unknown): WorkoutLogKind {
+  const blocks = blocksJson as Block[];
+  const main = blocks.find((b) => b.role === "main") ?? blocks[0];
+  return main ? BLOCK_KIND_TO_LOG_KIND[main.kind] : "running";
+}
+
+/**
+ * Ritmo médio (s/km) a partir de distância e tempo, pra quando o cliente não
+ * manda explícito (ex.: registro manual, sem Strava) — sem isso o campo
+ * "Ritmo médio" fica em branco no histórico de atividades.
+ */
+function derivePaceSecPerKm(
+  distanceMeters: number | undefined,
+  durationSeconds: number | undefined,
+): number | undefined {
+  if (!distanceMeters || !durationSeconds) return undefined;
+  return Math.round(durationSeconds / (distanceMeters / 1000));
+}
 
 /** Frequência (pico semanal) e distribuição por tipo — pra tela "Visão geral do plano". */
 function summarizePlanDays(days: { week: number; blocks: unknown }[]) {
@@ -244,6 +276,8 @@ export class PlanService {
     const isOwner = day.plan.assignments.some((a) => a.studentId === studentId);
     if (!isOwner) throw errors.dayNotFound();
 
+    const kind = logKindForDay(day.blocks);
+
     const log = await this.db.$transaction(async (tx) => {
       await tx.workoutDay.update({
         where: { id: dayId },
@@ -263,9 +297,13 @@ export class PlanService {
           workoutDayId: dayId,
           studentId,
           source: input.source,
+          kind,
           distanceMeters: input.distanceMeters,
           durationSeconds: input.durationSeconds,
-          avgPaceSecPerKm: input.avgPaceSecPerKm,
+          avgPaceSecPerKm:
+            kind === "running"
+              ? (input.avgPaceSecPerKm ?? derivePaceSecPerKm(input.distanceMeters, input.durationSeconds))
+              : undefined,
           avgHeartRate: input.avgHeartRate,
           cadence: input.cadence,
           elevationGainM: input.elevationGainM,
@@ -300,6 +338,10 @@ export class PlanService {
           kind: input.kind,
           distanceMeters: input.distanceMeters,
           durationSeconds: input.durationSeconds,
+          avgPaceSecPerKm:
+            input.kind === "running"
+              ? derivePaceSecPerKm(input.distanceMeters, input.durationSeconds)
+              : undefined,
           perceivedEffort: input.perceivedEffort,
           pain: input.pain,
           notes: input.notes,

@@ -28,6 +28,7 @@ const KIND_LABEL: Record<WorkoutLogKind, string> = {
   other: "Outro",
 };
 const KINDS: WorkoutLogKind[] = ["running", "strength", "mobility", "bike", "walk", "other"];
+const DISTANCE_KINDS: WorkoutLogKind[] = ["running", "bike", "walk"];
 
 /** Registro de um treino avulso (sem plano do treinador por trás). */
 export function LogWorkoutScreen() {
@@ -40,14 +41,16 @@ export function LogWorkoutScreen() {
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasDistance = DISTANCE_KINDS.includes(kind);
 
   async function save() {
     setBusy(true);
     setError(null);
     try {
-      const distance = distanceKm
-        ? Math.round(parseFloat(distanceKm.replace(",", ".")) * 1000)
-        : undefined;
+      const distance =
+        hasDistance && distanceKm
+          ? Math.round(parseFloat(distanceKm.replace(",", ".")) * 1000)
+          : undefined;
       const duration = durationText ? parseTimeInput(durationText) : undefined;
       await api.logStandaloneWorkout({
         kind,
@@ -97,17 +100,19 @@ export function LogWorkoutScreen() {
         </View>
 
         <View style={styles.dataRow}>
-          <View style={styles.dataCol}>
-            <Text style={[text.overline, styles.label]}>DISTÂNCIA (KM)</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="decimal-pad"
-              placeholder="6,5"
-              placeholderTextColor={color.textMuted}
-              value={distanceKm}
-              onChangeText={setDistanceKm}
-            />
-          </View>
+          {hasDistance && (
+            <View style={styles.dataCol}>
+              <Text style={[text.overline, styles.label]}>DISTÂNCIA (KM)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="decimal-pad"
+                placeholder="6,5"
+                placeholderTextColor={color.textMuted}
+                value={distanceKm}
+                onChangeText={setDistanceKm}
+              />
+            </View>
+          )}
           <View style={styles.dataCol}>
             <Text style={[text.overline, styles.label]}>TEMPO</Text>
             <TextInput

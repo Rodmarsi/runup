@@ -73,7 +73,7 @@ export function MainTabs() {
 
       <View style={styles.tabbar}>
         {TABS.map((t) => {
-          const active = tab === t.key && route.name === "home";
+          const active = tab === t.key;
           return (
             <Pressable
               key={t.key}
