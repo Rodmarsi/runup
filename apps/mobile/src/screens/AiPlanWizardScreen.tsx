@@ -274,7 +274,8 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
           <>
             <Text style={[text.overline, styles.label]}>{preview.plan.title.toUpperCase()}</Text>
             <Text style={text.secondary}>
-              {preview.summary.weeks} semanas · {preview.summary.days} treinos
+              {preview.summary.weeks} semana{preview.summary.weeks > 1 ? "s" : ""} ·{" "}
+              {preview.summary.days} treino{preview.summary.days > 1 ? "s" : ""}
             </Text>
             <View style={styles.previewList}>
               {preview.plan.days.map((d, i) => {

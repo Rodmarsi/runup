@@ -27,7 +27,15 @@ import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { useAuth } from "../auth.js";
 import { useSettings } from "../settings.js";
-import { duration, distance, unitLabel, localIsoDate, isoToBr, daysLabel } from "../format.js";
+import {
+  duration,
+  distance,
+  unitLabel,
+  localIsoDate,
+  isoToBr,
+  daysLabel,
+  parseTimeInput,
+} from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 import { DateField } from "../components/DateField.js";
 
@@ -43,13 +51,6 @@ const RACE_LABEL: Record<string, string> = {
 const STANDARD_RECORD_CATEGORIES = ["5k", "10k", "15k", "21k", "42k"];
 
 /** "1:32:45" ou "23:10" → segundos. */
-function parseTimeInput(input: string): number | undefined {
-  const parts = input.trim().split(":").map(Number);
-  if (parts.length < 2 || parts.length > 3 || parts.some((n) => Number.isNaN(n))) return undefined;
-  if (parts.length === 3) return parts[0]! * 3600 + parts[1]! * 60 + parts[2]!;
-  return parts[0]! * 60 + parts[1]!;
-}
-
 const ACHIEVEMENT_LABEL: Record<string, string> = {
   first_5k: "Primeiro 5 km",
   first_10k: "Primeiro 10 km",

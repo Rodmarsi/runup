@@ -248,25 +248,29 @@ export function PlanoScreen() {
         ))}
       </View>
 
-      <View style={styles.grid}>
-        {grid.map((date, i) => {
-          if (!date) return <View key={i} style={styles.cell} />;
-          const iso = localIsoDate(date);
-          const d = byDate.get(iso);
-          const isToday = iso === today;
-          return (
-            <Pressable
-              key={i}
-              onPress={() => navigate({ name: "day", date: iso })}
-              style={[styles.cell, isToday && styles.cellToday]}
-            >
-              <Text style={[styles.cellText, isToday && styles.cellTextToday]}>
-                {date.getDate()}
-              </Text>
-              <DayDots day={d} hasRace={raceDates.has(iso)} />
-            </Pressable>
-          );
-        })}
+      <View>
+        {Array.from({ length: grid.length / 7 }, (_, week) => (
+          <View key={week} style={styles.gridRow}>
+            {grid.slice(week * 7, week * 7 + 7).map((date, i) => {
+              if (!date) return <View key={i} style={styles.cell} />;
+              const iso = localIsoDate(date);
+              const d = byDate.get(iso);
+              const isToday = iso === today;
+              return (
+                <Pressable
+                  key={i}
+                  onPress={() => navigate({ name: "day", date: iso })}
+                  style={[styles.cell, isToday && styles.cellToday]}
+                >
+                  <Text style={[styles.cellText, isToday && styles.cellTextToday]}>
+                    {date.getDate()}
+                  </Text>
+                  <DayDots day={d} hasRace={raceDates.has(iso)} />
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
       </View>
 
       <Text style={[text.overline, styles.label]}>TREINOS DO MÊS</Text>
@@ -391,9 +395,9 @@ const styles = StyleSheet.create({
     color: color.textFaint,
     marginBottom: 4,
   },
-  grid: { flexDirection: "row", flexWrap: "wrap" },
+  gridRow: { flexDirection: "row" },
   cell: {
-    width: `${100 / 7}%`,
+    flex: 1,
     aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",

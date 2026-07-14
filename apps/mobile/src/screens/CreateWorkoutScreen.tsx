@@ -13,7 +13,7 @@ import type { BlockItem, BlockKind, RunningType } from "@runup/types";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { localIsoDate, parsePace, pace, duration } from "../format.js";
+import { localIsoDate, parsePace, pace, duration, maskTimeDigits } from "../format.js";
 
 const KIND_LABEL: Record<BlockKind, string> = {
   running: "Corrida",
@@ -231,7 +231,8 @@ export function CreateWorkoutScreen({ initialDate }: { initialDate?: string }) {
                 <TextInput
                   style={styles.input}
                   value={paceText}
-                  onChangeText={setPaceText}
+                  onChangeText={(t) => setPaceText(maskTimeDigits(t))}
+                  keyboardType="number-pad"
                   placeholder="mm:ss /km"
                   placeholderTextColor={color.textMuted}
                 />

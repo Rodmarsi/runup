@@ -12,6 +12,7 @@ export default function ChatPage() {
   const linkId = params.linkId;
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [meId, setMeId] = useState<string | null>(null);
+  const [withName, setWithName] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const endRef = useRef<HTMLDivElement>(null);
@@ -25,10 +26,11 @@ export default function ChatPage() {
       router.replace("/login");
       return;
     }
-    Promise.all([api.me(), api.messages(linkId)])
-      .then(([me, msgs]) => {
+    Promise.all([api.me(), api.messages(linkId), api.conversations()])
+      .then(([me, msgs, convs]) => {
         setMeId(me.id);
         setMessages(msgs);
+        setWithName(convs.find((c) => c.linkId === linkId)?.with.name ?? null);
       })
       .catch(() => router.replace("/"))
       .finally(() => setLoading(false));
@@ -52,7 +54,7 @@ export default function ChatPage() {
         <button onClick={() => router.back()} style={styles.back}>
           ‹ Voltar
         </button>
-        <span style={styles.title}>Conversa</span>
+        <span style={styles.title}>{withName ?? "Conversa"}</span>
         <span style={{ width: 48 }} />
       </div>
 

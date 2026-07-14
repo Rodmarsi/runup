@@ -63,6 +63,28 @@ export function parsePace(text: string): number | undefined {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
+/**
+ * Máscara de tempo pra digitação só de números: insere ":" antes dos dois
+ * últimos dígitos, iterativamente — "550" → "5:50", "11020" → "1:10:20".
+ * Uso: `onChangeText={(t) => setText(maskTimeDigits(t))}`.
+ */
+export function maskTimeDigits(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 6);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) {
+    return `${digits.slice(0, -2)}:${digits.slice(-2)}`;
+  }
+  return `${digits.slice(0, -4)}:${digits.slice(-4, -2)}:${digits.slice(-2)}`;
+}
+
+/** "5:30" ou "1:05:30" → segundos (aceita mm:ss ou h:mm:ss). */
+export function parseTimeInput(input: string): number | undefined {
+  const parts = input.trim().split(":").map(Number);
+  if (parts.length < 2 || parts.length > 3 || parts.some((n) => Number.isNaN(n))) return undefined;
+  if (parts.length === 3) return parts[0]! * 3600 + parts[1]! * 60 + parts[2]!;
+  return parts[0]! * 60 + parts[1]!;
+}
+
 /** Pace (s/km) como "m:ss" (ex.: 270 → "4:30"). */
 export function pace(secPerKm: number | null): string {
   if (secPerKm === null) return "—";

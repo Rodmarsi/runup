@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from "react-native";
+import { useState, type ReactNode } from "react";
+import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { color, border } from "@runup/ui/tokens";
 import { ApiError, type RaceDto, type RaceStatus } from "@runup/api-client";
@@ -7,7 +7,7 @@ import type { RaceDistance } from "@runup/types";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { km, duration, isoToBr } from "../format.js";
+import { km, duration, isoToBr, maskTimeDigits, parseTimeInput } from "../format.js";
 
 const STATUS_LABEL: Record<RaceStatus, string> = {
   interested: "Interessado",
@@ -32,6 +32,50 @@ export function RaceDetailScreen({ race }: { race: RaceDto }) {
   const [savingStatus, setSavingStatus] = useState(false);
   const [isTarget, setIsTarget] = useState(race.isTarget);
   const [savingTarget, setSavingTarget] = useState(false);
+  const [distanceMeters, setDistanceMeters] = useState(race.distanceMeters);
+  const [targetTimeSeconds, setTargetTimeSeconds] = useState(race.targetTimeSeconds);
+  const [editingField, setEditingField] = useState<"distance" | "time" | null>(null);
+  const [distanceText, setDistanceText] = useState(
+    race.distanceMeters ? km(race.distanceMeters) : "",
+  );
+  const [timeText, setTimeText] = useState(
+    race.targetTimeSeconds ? duration(race.targetTimeSeconds) : "",
+  );
+  const [savingField, setSavingField] = useState(false);
+
+  async function saveDistance() {
+    const value = distanceText
+      ? Math.round(parseFloat(distanceText.replace(",", ".")) * 1000)
+      : undefined;
+    setSavingField(true);
+    try {
+      await api.updateRace(race.id, { distanceMeters: value });
+      setDistanceMeters(value ?? null);
+      setEditingField(null);
+    } catch (e) {
+      Alert.alert("Erro", e instanceof ApiError ? e.message : "Não foi possível atualizar");
+    } finally {
+      setSavingField(false);
+    }
+  }
+
+  async function saveTargetTime() {
+    const value = timeText ? parseTimeInput(timeText) : undefined;
+    if (timeText && !value) {
+      Alert.alert("Tempo inválido", "Use o formato mm:ss ou h:mm:ss.");
+      return;
+    }
+    setSavingField(true);
+    try {
+      await api.updateRace(race.id, { targetTimeSeconds: value });
+      setTargetTimeSeconds(value ?? null);
+      setEditingField(null);
+    } catch (e) {
+      Alert.alert("Erro", e instanceof ApiError ? e.message : "Não foi possível atualizar");
+    } finally {
+      setSavingField(false);
+    }
+  }
 
   async function changeStatus(next: RaceStatus) {
     setSavingStatus(true);
@@ -75,7 +119,7 @@ export function RaceDetailScreen({ race }: { race: RaceDto }) {
     navigate({
       name: "aiPlanWizard",
       prefill: {
-        targetRace: nearestRaceDistance(race.distanceMeters),
+        targetRace: nearestRaceDistance(distanceMeters),
         raceDate: race.raceDate.slice(0, 10),
         objective: `Me preparar pra ${race.name}`,
       },
@@ -107,11 +151,48 @@ export function RaceDetailScreen({ race }: { race: RaceDto }) {
       </Pressable>
 
       <View style={styles.metaRow}>
-        <MetaCard label="Distância" value={race.distanceMeters ? `${km(race.distanceMeters)} km` : "—"} />
-        <MetaCard
+        <EditableMetaCard
+          label="Distância"
+          value={distanceMeters ? `${km(distanceMeters)} km` : "—"}
+          editing={editingField === "distance"}
+          onPressEdit={() => setEditingField("distance")}
+        >
+          <View style={styles.editRow}>
+            <TextInput
+              style={styles.editInput}
+              value={distanceText}
+              onChangeText={setDistanceText}
+              keyboardType="decimal-pad"
+              placeholder="km"
+              placeholderTextColor={color.textFaint}
+              autoFocus
+            />
+            <Pressable onPress={saveDistance} disabled={savingField} style={styles.editSaveBtn}>
+              <Text style={styles.editSaveBtnText}>{savingField ? "..." : "OK"}</Text>
+            </Pressable>
+          </View>
+        </EditableMetaCard>
+        <EditableMetaCard
           label="Tempo alvo"
-          value={race.targetTimeSeconds ? duration(race.targetTimeSeconds) : "—"}
-        />
+          value={targetTimeSeconds ? duration(targetTimeSeconds) : "—"}
+          editing={editingField === "time"}
+          onPressEdit={() => setEditingField("time")}
+        >
+          <View style={styles.editRow}>
+            <TextInput
+              style={styles.editInput}
+              value={timeText}
+              onChangeText={(t) => setTimeText(maskTimeDigits(t))}
+              keyboardType="number-pad"
+              placeholder="h:mm:ss"
+              placeholderTextColor={color.textFaint}
+              autoFocus
+            />
+            <Pressable onPress={saveTargetTime} disabled={savingField} style={styles.editSaveBtn}>
+              <Text style={styles.editSaveBtnText}>{savingField ? "..." : "OK"}</Text>
+            </Pressable>
+          </View>
+        </EditableMetaCard>
       </View>
 
       <Text style={[text.overline, styles.label]}>STATUS</Text>
@@ -135,7 +216,7 @@ export function RaceDetailScreen({ race }: { race: RaceDto }) {
           <Text style={[text.overline, styles.label]}>LINKS</Text>
           {race.courseUrl && (
             <Pressable onPress={() => WebBrowser.openBrowserAsync(race.courseUrl!)} style={styles.linkRow}>
-              <Text style={styles.linkText}>Ver percurso / altimetria</Text>
+              <Text style={styles.linkText}>Regulamento</Text>
               <Text style={styles.chevron}>›</Text>
             </Pressable>
           )}
@@ -162,12 +243,32 @@ export function RaceDetailScreen({ race }: { race: RaceDto }) {
   );
 }
 
-function MetaCard({ label, value }: { label: string; value: string }) {
+function EditableMetaCard({
+  label,
+  value,
+  editing,
+  onPressEdit,
+  children,
+}: {
+  label: string;
+  value: string;
+  editing: boolean;
+  onPressEdit: () => void;
+  children: ReactNode;
+}) {
+  if (editing) {
+    return (
+      <View style={styles.metaCard}>
+        <Text style={text.muted}>{label}</Text>
+        {children}
+      </View>
+    );
+  }
   return (
-    <View style={styles.metaCard}>
+    <Pressable style={styles.metaCard} onPress={onPressEdit}>
       <Text style={text.muted}>{label}</Text>
       <Text style={styles.metaValue}>{value}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -199,6 +300,26 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   metaValue: { fontFamily: font.bold, fontSize: 17, color: color.textPrimary, marginTop: 2 },
+  editRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
+  editInput: {
+    flex: 1,
+    backgroundColor: color.surface1,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    color: color.textPrimary,
+    fontFamily: font.regular,
+    fontSize: 13,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  editSaveBtn: {
+    backgroundColor: color.orange500,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  editSaveBtnText: { fontFamily: font.semibold, fontSize: 12, color: color.ink },
   label: { marginTop: 20, marginBottom: 8 },
   segment: { flexDirection: "row", gap: 6 },
   segmentBtn: {

@@ -15,6 +15,7 @@ import { ApiError, type WorkoutLogKind } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
+import { maskTimeDigits, parseTimeInput } from "../format.js";
 
 const PAINS = ["Nenhuma", "Joelho", "Panturrilha", "Canela", "Outro"];
 const RPE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -33,7 +34,7 @@ export function LogWorkoutScreen() {
   const { goHome } = useNav();
   const [kind, setKind] = useState<WorkoutLogKind>("running");
   const [distanceKm, setDistanceKm] = useState("");
-  const [durationMin, setDurationMin] = useState("");
+  const [durationText, setDurationText] = useState("");
   const [rpe, setRpe] = useState<number | null>(null);
   const [pain, setPain] = useState<string | null>("Nenhuma");
   const [notes, setNotes] = useState("");
@@ -47,9 +48,7 @@ export function LogWorkoutScreen() {
       const distance = distanceKm
         ? Math.round(parseFloat(distanceKm.replace(",", ".")) * 1000)
         : undefined;
-      const duration = durationMin
-        ? Math.round(parseFloat(durationMin.replace(",", ".")) * 60)
-        : undefined;
+      const duration = durationText ? parseTimeInput(durationText) : undefined;
       await api.logStandaloneWorkout({
         kind,
         distanceMeters: distance,
@@ -110,14 +109,14 @@ export function LogWorkoutScreen() {
             />
           </View>
           <View style={styles.dataCol}>
-            <Text style={[text.overline, styles.label]}>TEMPO (MIN)</Text>
+            <Text style={[text.overline, styles.label]}>TEMPO</Text>
             <TextInput
               style={styles.input}
-              keyboardType="decimal-pad"
-              placeholder="42"
+              keyboardType="number-pad"
+              placeholder="mm:ss"
               placeholderTextColor={color.textMuted}
-              value={durationMin}
-              onChangeText={setDurationMin}
+              value={durationText}
+              onChangeText={(t) => setDurationText(maskTimeDigits(t))}
             />
           </View>
         </View>

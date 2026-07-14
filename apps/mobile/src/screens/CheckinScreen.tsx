@@ -16,6 +16,7 @@ import { ApiError, type ShoeDto } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
+import { maskTimeDigits, parseTimeInput } from "../format.js";
 
 const STATUSES: { label: string; value: WorkoutDayStatus }[] = [
   { label: "Concluí", value: "done" },
@@ -29,7 +30,7 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
   const { goHome } = useNav();
   const [status, setStatus] = useState<WorkoutDayStatus>("done");
   const [distanceKm, setDistanceKm] = useState("");
-  const [durationMin, setDurationMin] = useState("");
+  const [durationText, setDurationText] = useState("");
   const [rpe, setRpe] = useState<number | null>(null);
   const [pain, setPain] = useState<string | null>("Nenhuma");
   const [notes, setNotes] = useState("");
@@ -47,7 +48,7 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
     setError(null);
     try {
       const distance = distanceKm ? Math.round(parseFloat(distanceKm.replace(",", ".")) * 1000) : undefined;
-      const duration = durationMin ? Math.round(parseFloat(durationMin.replace(",", ".")) * 60) : undefined;
+      const duration = durationText ? parseTimeInput(durationText) : undefined;
       await api.logWorkout(dayId, {
         status,
         distanceMeters: distance,
@@ -106,14 +107,14 @@ export function CheckinScreen({ dayId }: { dayId: string }) {
             />
           </View>
           <View style={styles.dataCol}>
-            <Text style={[text.overline, styles.label]}>TEMPO (MIN)</Text>
+            <Text style={[text.overline, styles.label]}>TEMPO</Text>
             <TextInput
               style={styles.input}
-              keyboardType="decimal-pad"
-              placeholder="42"
+              keyboardType="number-pad"
+              placeholder="mm:ss"
               placeholderTextColor={color.textMuted}
-              value={durationMin}
-              onChangeText={setDurationMin}
+              value={durationText}
+              onChangeText={(t) => setDurationText(maskTimeDigits(t))}
             />
           </View>
         </View>
