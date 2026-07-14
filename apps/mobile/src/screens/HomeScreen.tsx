@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   View,
   Text,
-  Image,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
@@ -12,11 +11,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { color, border } from "@runup/ui/tokens";
 import type { WorkoutDayDto, Stats, RaceDto, Insight } from "@runup/api-client";
 import { text, font, gradients } from "../theme.js";
-import { useAuth } from "../auth.js";
 import { useNav } from "../nav.js";
 import { useSettings } from "../settings.js";
 import { api } from "../api.js";
-import { km, pace, localIsoDate, greeting, distance, paceForUnits, unitLabel, paceUnitLabel } from "../format.js";
+import { km, pace, localIsoDate, distance, paceForUnits, unitLabel, paceUnitLabel } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 import { DayDots } from "../components/DayDots.js";
 
@@ -48,8 +46,7 @@ function summarize(day: WorkoutDayDto): { title: string; sub: string } {
   return { title: "Treino do dia", sub: "Força / mobilidade" };
 }
 
-export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
-  const { user } = useAuth();
+export function HomeScreen() {
   const { navigate } = useNav();
   const { units } = useSettings();
   const [days, setDays] = useState<WorkoutDayDto[]>([]);
@@ -122,28 +119,6 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Cabeçalho */}
-        <View style={styles.header}>
-          <Pressable onPress={onOpenProfile} style={styles.headerLeft}>
-            <View style={styles.avatar}>
-              {user?.avatarUrl ? (
-                <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
-              ) : (
-                <Text style={styles.avatarText}>
-                  {user?.name.charAt(0).toUpperCase() ?? "?"}
-                </Text>
-              )}
-            </View>
-            <View>
-              <Text style={text.muted}>{greeting()},</Text>
-              <Text style={text.cardTitle}>{user?.name ?? ""}</Text>
-            </View>
-          </Pressable>
-          <View style={styles.streak}>
-            <Text style={styles.streakText}>🔥 {stats?.streakDays ?? 0}</Text>
-          </View>
-        </View>
-
         {/* Sua semana */}
         <View style={styles.weekHeader}>
           <Text style={[text.overline, styles.section]}>SUA SEMANA</Text>
@@ -352,30 +327,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.surface0 },
   center: { justifyContent: "center", alignItems: "center" },
   scroll: { padding: 16, paddingBottom: 24 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 99,
-    backgroundColor: color.orangeDim,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarImage: { width: 36, height: 36, borderRadius: 99 },
-  avatarText: { fontFamily: font.semibold, fontSize: 14, color: color.orange400 },
-  streak: {
-    backgroundColor: color.orangeDim,
-    borderRadius: 99,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-  },
-  streakText: { fontFamily: font.semibold, fontSize: 13, color: color.orange400 },
   section: { marginBottom: 8 },
   weekHeader: {
     flexDirection: "row",

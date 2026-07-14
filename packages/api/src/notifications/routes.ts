@@ -18,5 +18,18 @@ export function notificationRoutes(db: PrismaClient) {
       await notifications.registerToken(request.authUser!.id, parsed.data.token);
       reply.status(204).send();
     });
+
+    app.get("/me/notifications", authed, async (request) => {
+      return notifications.list(request.authUser!.id);
+    });
+
+    app.get("/me/notifications/unread-count", authed, async (request) => {
+      return { count: await notifications.countUnread(request.authUser!.id) };
+    });
+
+    app.post("/me/notifications/read", authed, async (request, reply) => {
+      await notifications.markAllRead(request.authUser!.id);
+      reply.status(204).send();
+    });
   };
 }

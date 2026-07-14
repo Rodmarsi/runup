@@ -16,8 +16,18 @@ export class NotificationService {
     });
   }
 
-  /** Envia via Expo Push API. Nunca lança — notificação não pode derrubar o fluxo principal. */
+  /**
+   * Grava a notificação (pro sino in-app) e envia via Expo Push API. A
+   * gravação nunca lança — notificação não pode derrubar o fluxo principal
+   * que a originou (mensagem, comentário, lembrete...).
+   */
   async send(userId: string, title: string, body: string) {
+    try {
+      await this.db.notification.create({ data: { userId, title, body } });
+    } catch {
+      // idem — melhor esforço.
+    }
+
     const tokens = await this.db.pushToken.findMany({ where: { userId } });
     if (tokens.length === 0) return;
 
@@ -32,5 +42,25 @@ export class NotificationService {
     } catch {
       // Melhor esforço — falha de push não deve quebrar a ação que a originou.
     }
+  }
+
+  /** Últimas notificações do usuário, mais recentes primeiro. */
+  list(userId: string) {
+    return this.db.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+  }
+
+  countUnread(userId: string) {
+    return this.db.notification.count({ where: { userId, read: false } });
+  }
+
+  async markAllRead(userId: string) {
+    await this.db.notification.updateMany({
+      where: { userId, read: false },
+      data: { read: true },
+    });
   }
 }

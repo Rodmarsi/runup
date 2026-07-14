@@ -48,6 +48,7 @@ import {
   type ExternalRaceDto,
   type SearchRacesQuery,
   type ImportRaceInput,
+  type NotificationDto,
 } from "./types.js";
 
 export * from "./types.js";
@@ -419,6 +420,18 @@ export class RunUpClient {
 
   registerPushToken(token: string) {
     return this.request("POST", "/me/push-token", { token });
+  }
+
+  notifications(): Promise<NotificationDto[]> {
+    return this.request<NotificationDto[]>("GET", "/me/notifications");
+  }
+
+  unreadNotificationCount(): Promise<{ count: number }> {
+    return this.request<{ count: number }>("GET", "/me/notifications/unread-count");
+  }
+
+  markNotificationsRead() {
+    return this.request("POST", "/me/notifications/read");
   }
 
   /** Tudo que o aluno tem cadastrado, pra Configurações > Exportar dados. */

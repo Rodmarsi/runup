@@ -99,9 +99,7 @@ export function AnalisesScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <Text style={text.screenTitle}>Análises</Text>
-
-      <Text style={[text.overline, styles.label]}>KM POR SEMANA</Text>
+      <Text style={[text.overline, styles.label, styles.firstLabel]}>KM POR SEMANA</Text>
       <View style={styles.card}>
         <View style={styles.chart}>
           {buckets.map((km, i) => (
@@ -184,6 +182,7 @@ const styles = StyleSheet.create({
   center: { justifyContent: "center", alignItems: "center" },
   scroll: { padding: 16, paddingBottom: 40 },
   label: { marginTop: 20, marginBottom: 8 },
+  firstLabel: { marginTop: 4 },
   card: {
     backgroundColor: color.surface2,
     borderRadius: 12,

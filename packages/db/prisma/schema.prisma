@@ -129,6 +129,20 @@ model User {
   achievements   Achievement[]
   missions       Mission[]
   pushTokens     PushToken[]
+  notifications  Notification[]
+}
+
+/** Notificação in-app — gravada nos mesmos pontos que já disparam push. */
+model Notification {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 /** Token de push (Expo) — um dispositivo pode registrar mais de um ao longo do tempo. */

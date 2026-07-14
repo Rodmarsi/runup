@@ -8,6 +8,7 @@ import { useNav } from "../nav.js";
 import { useSettings } from "../settings.js";
 import { distance, unitLabel, paceForUnits, paceUnitLabel, isoToBr } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
+import { AnalisesScreen } from "./AnalisesScreen.js";
 
 const KIND_LABEL: Record<WorkoutLogKind, string> = {
   running: "Corrida",
@@ -23,7 +24,38 @@ function filterLabel(f: WorkoutLogKind | "all"): string {
   return f === "all" ? "Todas" : KIND_LABEL[f];
 }
 
+type SubTab = "atividades" | "desempenho";
+
+/** Lista de atividades e Análises/desempenho, como abas internas de uma só tela (padrão Runna). */
 export function AtividadesScreen() {
+  const [subTab, setSubTab] = useState<SubTab>("atividades");
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.subTabRow}>
+        <Pressable
+          onPress={() => setSubTab("atividades")}
+          style={[styles.subTabBtn, subTab === "atividades" && styles.subTabBtnActive]}
+        >
+          <Text style={subTab === "atividades" ? styles.subTabTextActive : styles.subTabText}>
+            Atividades
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setSubTab("desempenho")}
+          style={[styles.subTabBtn, subTab === "desempenho" && styles.subTabBtnActive]}
+        >
+          <Text style={subTab === "desempenho" ? styles.subTabTextActive : styles.subTabText}>
+            Desempenho
+          </Text>
+        </Pressable>
+      </View>
+      {subTab === "atividades" ? <ActivityList /> : <AnalisesScreen />}
+    </View>
+  );
+}
+
+function ActivityList() {
   const { navigate } = useNav();
   const { units } = useSettings();
   const [logs, setLogs] = useState<WorkoutLogDto[]>([]);
@@ -63,8 +95,6 @@ export function AtividadesScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <Text style={text.screenTitle}>Atividades</Text>
-
       <View style={styles.filters}>
         {FILTERS.map((f) => {
           const active = filter === f;
@@ -118,6 +148,21 @@ const styles = StyleSheet.create({
   center: { justifyContent: "center", alignItems: "center" },
   scroll: { padding: 16, paddingBottom: 24 },
   label: { marginTop: 14, marginBottom: 8 },
+  subTabRow: {
+    flexDirection: "row",
+    gap: 4,
+    margin: 16,
+    marginBottom: 0,
+    padding: 4,
+    borderRadius: 99,
+    backgroundColor: color.surface2,
+    borderWidth: 1,
+    borderColor: border.hairline,
+  },
+  subTabBtn: { flex: 1, alignItems: "center", paddingVertical: 9, borderRadius: 99 },
+  subTabBtnActive: { backgroundColor: color.orangeDim },
+  subTabText: { fontFamily: font.medium, fontSize: 13, color: color.textMuted },
+  subTabTextActive: { fontFamily: font.semibold, fontSize: 13, color: color.orange400 },
   filters: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 14, marginBottom: 4 },
   filterChip: {
     paddingHorizontal: 12,

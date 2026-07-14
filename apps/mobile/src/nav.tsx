@@ -32,6 +32,7 @@ export type Route =
   | { name: "equipment" }
   | { name: "shoeDetail"; shoe: ShoeDto }
   | { name: "settings" }
+  | { name: "notifications" }
   | { name: "activity"; log: WorkoutLogDto }
   | { name: "createWorkout"; initialDate?: string }
   | { name: "aiPlanWizard"; prefill?: AiPlanPrefill }

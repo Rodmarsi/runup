@@ -93,6 +93,14 @@ export interface WorkoutDayDetailDto extends WorkoutDayDto {
   logs: WorkoutLogDto[];
 }
 
+export interface NotificationDto {
+  id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  createdAt: string;
+}
+
 export interface Stats {
   totalDistanceMeters: number;
   totalTimeSeconds: number;
