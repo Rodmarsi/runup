@@ -105,6 +105,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   const nextRace = races
     .filter((r) => r.raceDate.slice(0, 10) >= today)
     .sort((a, b) => a.raceDate.localeCompare(b.raceDate))[0];
+  const targetRace = races.find((r) => r.isTarget);
   const daysUntilRace = nextRace
     ? Math.round(
         (new Date(nextRace.raceDate.slice(0, 10)).getTime() - new Date(today).getTime()) /
@@ -198,6 +199,7 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
               <Text style={styles.heroOverline}>HOJE</Text>
               <Text style={styles.heroTitle}>{summarize(todayDay).title}</Text>
               <Text style={styles.heroSub}>{summarize(todayDay).sub}</Text>
+              {targetRace && <Text style={styles.heroRace}>🎯 {targetRace.name}</Text>}
             </LinearGradient>
           </Pressable>
         ) : selectedDate === today && days.length === 0 && stats?.lastWorkoutDate && localIsoDate(new Date(stats.lastWorkoutDate)) === today ? (
@@ -235,14 +237,34 @@ export function HomeScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
             <Text style={styles.selectedTitle}>{summarize(selectedDay).title}</Text>
             <Text style={text.muted}>{summarize(selectedDay).sub}</Text>
           </Pressable>
+        ) : selectedDate === today ? (
+          <View style={[styles.card, styles.restCard]}>
+            <Text style={[text.overline, styles.selectedOverline]}>
+              {selectedDateLabel}
+            </Text>
+            <Text style={styles.selectedTitle}>Você vai correr ou correu hoje?</Text>
+            <Text style={text.secondary}>{restMessage(stats?.streakDays ?? 0)}</Text>
+            <View style={styles.emptyActions}>
+              <Pressable
+                onPress={() => navigate({ name: "logWorkout" })}
+                style={styles.emptyBtn}
+              >
+                <Text style={styles.emptyBtnText}>Registrar atividade</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => navigate({ name: "createWorkout", initialDate: today })}
+                style={styles.emptyBtn}
+              >
+                <Text style={styles.emptyBtnText}>Criar treino</Text>
+              </Pressable>
+            </View>
+          </View>
         ) : (
           <View style={[styles.card, styles.restCard]}>
             <Text style={[text.overline, styles.selectedOverline]}>
               {selectedDateLabel}
             </Text>
-            <Text style={text.secondary}>
-              {selectedDate === today ? restMessage(stats?.streakDays ?? 0) : "Sem treino neste dia."}
-            </Text>
+            <Text style={text.secondary}>Sem treino neste dia.</Text>
           </View>
         )}
 
@@ -387,6 +409,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: { fontFamily: font.bold, fontSize: 18, color: "#fff" },
   heroSub: { fontFamily: font.regular, fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 4 },
+  heroRace: { fontFamily: font.medium, fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 8 },
   card: {
     backgroundColor: color.surface2,
     borderRadius: 12,
@@ -407,6 +430,16 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   logWorkoutText: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
+  emptyActions: { flexDirection: "row", gap: 8, marginTop: 12 },
+  emptyBtn: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: color.orangeDim,
+    borderRadius: 99,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  emptyBtnText: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
   metricsRow: { flexDirection: "row", gap: 8 },
   metricCard: {
     flex: 1,

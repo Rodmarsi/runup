@@ -31,9 +31,14 @@ Regras:
   a experiência e o histórico do aluno. Considere lesões relatadas ao escolher o tipo de treino.
 - Inclua pelo menos 1 treino longo por semana quando fizer sentido pro objetivo, e preveja semanas de
   redução de carga (cutback) periodicamente ao longo do plano.
-- Itens de corrida (kind "running") nos blocos "warmup" e "cooldown" DEVEM sempre vir com
-  distanceMeters OU durationSeconds preenchido (ex.: ~1000m ou ~600s de trote leve) — nunca deixe os
-  dois em branco, mesmo que seja um valor padrão.
+- TODO item de corrida (kind "running"), em QUALQUER bloco (warmup, main, cooldown), DEVE vir com
+  distanceMeters OU durationSeconds preenchido — e, quando fizer sentido pro tipo de treino,
+  targetPaceSecPerKm também. Nunca deixe um item de corrida sem nenhum desses campos, mesmo que seja
+  um valor padrão (ex.: aquecimento/desaquecimento ~1000m de trote leve).
+- Aquecimento, principal e desaquecimento são fases DIFERENTES do treino — nunca gere os três com o
+  mesmo conteúdo (mesma distância/pace/tipo). O principal é o foco do dia (o que muda conforme o
+  objetivo/periodização); aquecimento e desaquecimento são sempre mais curtos e mais leves que o
+  principal.
 - "confidence" é sempre "high" (não há ambiguidade de leitura — é geração original).`;
 
 export function buildPrompt(input: GeneratePlanInput, slots: PlanSlot[]): string {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  Animated,
+  Easing,
   Alert,
 } from "react-native";
 import { color, border } from "@runup/ui/tokens";
@@ -62,16 +64,53 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<AiPlanPreview | null>(null);
+  const [progressPct, setProgressPct] = useState(0);
+  const cancelledRef = useRef(false);
+  const spinValue = useRef(new Animated.Value(0)).current;
 
   function toggleWeekday(d: number) {
     setWeekdays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()));
   }
+
+  // Progresso simulado (a API não expõe progresso real) — sobe rápido no
+  // início e desacelera perto do fim, pra não parecer travado numa espera
+  // de até 1 minuto.
+  useEffect(() => {
+    if (!generating) {
+      setProgressPct(0);
+      return;
+    }
+    const startedAt = Date.now();
+    const interval = setInterval(() => {
+      const elapsedSec = (Date.now() - startedAt) / 1000;
+      setProgressPct(Math.min(92, Math.round(92 * (1 - Math.exp(-elapsedSec / 18)))));
+    }, 300);
+    return () => clearInterval(interval);
+  }, [generating]);
+
+  useEffect(() => {
+    if (!generating) {
+      spinValue.setValue(0);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 1400,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [generating, spinValue]);
 
   async function generate() {
     if (weekdays.length === 0) {
       setError("Escolhe pelo menos um dia da semana.");
       return;
     }
+    cancelledRef.current = false;
     setGenerating(true);
     setError(null);
     try {
@@ -93,13 +132,20 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
           : undefined,
         injuries: injuries.trim() || undefined,
       });
+      if (cancelledRef.current) return;
       setPreview(result);
       setStep(3);
     } catch (e) {
+      if (cancelledRef.current) return;
       setError(e instanceof ApiError ? e.message : "Não foi possível gerar o plano");
     } finally {
-      setGenerating(false);
+      if (!cancelledRef.current) setGenerating(false);
     }
+  }
+
+  function cancelGeneration() {
+    cancelledRef.current = true;
+    setGenerating(false);
   }
 
   async function confirm() {
@@ -237,7 +283,33 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
           </>
         )}
 
-        {step === 2 && (
+        {step === 2 && generating && (
+          <View style={styles.loadingWrap}>
+            <Animated.Text
+              style={[
+                styles.loadingIcon,
+                {
+                  transform: [
+                    {
+                      rotate: spinValue.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ["0deg", "360deg"],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              🏃
+            </Animated.Text>
+            <Text style={styles.loadingPct}>{progressPct}%</Text>
+            <Text style={[text.secondary, styles.loadingText]}>
+              A IA está montando seu plano semana a semana — isso pode levar até 1 minuto.
+            </Text>
+          </View>
+        )}
+
+        {step === 2 && !generating && (
           <>
             <Text style={[text.overline, styles.label]}>DIAS DISPONÍVEIS PRA TREINAR</Text>
             <View style={styles.chips}>
@@ -320,20 +392,14 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
           </Pressable>
         )}
         {step === 2 && (
-          <>
-            {generating && (
-              <Text style={[text.muted, styles.generatingHint]}>
-                Isso pode levar até 1 minuto — a IA está montando o plano semana a semana.
-              </Text>
-            )}
-            <Pressable onPress={generate} disabled={generating} style={styles.cta}>
-              {generating ? (
-                <ActivityIndicator color={color.ink} />
-              ) : (
-                <Text style={styles.ctaText}>Gerar plano</Text>
-              )}
-            </Pressable>
-          </>
+          <Pressable
+            onPress={generating ? cancelGeneration : generate}
+            style={generating ? styles.cancelCta : styles.cta}
+          >
+            <Text style={generating ? styles.cancelCtaText : styles.ctaText}>
+              {generating ? "Cancelar" : "Gerar plano"}
+            </Text>
+          </Pressable>
         )}
         {step === 3 && (
           <Pressable onPress={confirm} disabled={confirming} style={styles.cta}>
@@ -344,7 +410,7 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
             )}
           </Pressable>
         )}
-        {step > 0 && step < 3 && (
+        {step > 0 && step < 3 && !generating && (
           <Pressable onPress={() => setStep((s) => (s - 1) as Step)} style={styles.backCta}>
             <Text style={styles.backCtaText}>Voltar</Text>
           </Pressable>
@@ -400,7 +466,6 @@ const styles = StyleSheet.create({
   },
   previewDate: { fontFamily: font.semibold, fontSize: 12, color: color.orange400, width: 44 },
   footer: { padding: 16, gap: 8 },
-  generatingHint: { textAlign: "center", fontSize: 12, marginBottom: 4 },
   cta: {
     alignItems: "center",
     paddingVertical: 14,
@@ -408,6 +473,19 @@ const styles = StyleSheet.create({
     backgroundColor: color.orange500,
   },
   ctaText: { fontFamily: font.semibold, fontSize: 15, color: color.ink },
+  cancelCta: {
+    alignItems: "center",
+    paddingVertical: 14,
+    borderRadius: 99,
+    backgroundColor: color.surface2,
+    borderWidth: 1,
+    borderColor: border.hairline,
+  },
+  cancelCtaText: { fontFamily: font.semibold, fontSize: 15, color: color.textSecondary },
   backCta: { alignItems: "center", paddingVertical: 10 },
   backCtaText: { fontFamily: font.medium, fontSize: 13, color: color.textSecondary },
+  loadingWrap: { alignItems: "center", paddingTop: 60, paddingHorizontal: 12 },
+  loadingIcon: { fontSize: 48, marginBottom: 20 },
+  loadingPct: { fontFamily: font.bold, fontSize: 32, color: color.orange400, marginBottom: 12 },
+  loadingText: { textAlign: "center", lineHeight: 18 },
 });
