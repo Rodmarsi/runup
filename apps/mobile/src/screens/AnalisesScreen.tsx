@@ -5,7 +5,7 @@ import type { WorkoutLogDto, WorkoutDayDto, Stats, RacePredictionDto } from "@ru
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useSettings } from "../settings.js";
-import { distance, unitLabel, duration } from "../format.js";
+import { distance, unitLabel, duration, daysLabel } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 
 const PREDICTION_LABEL: Record<string, string> = {
@@ -142,7 +142,7 @@ export function AnalisesScreen() {
 
       <Text style={[text.overline, styles.label]}>GERAL</Text>
       <View style={styles.statGrid}>
-        <Stat label="Sequência atual" value={`${stats?.streakDays ?? 0} dias`} />
+        <Stat label="Sequência atual" value={daysLabel(stats?.streakDays ?? 0)} />
         <Stat label="Dias perdidos" value={String(missedDays)} />
         <Stat label="Tempo médio/treino" value={avgTimePerWorkout ? duration(Math.round(avgTimePerWorkout)) : "—"} />
       </View>

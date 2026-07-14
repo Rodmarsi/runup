@@ -27,7 +27,7 @@ import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { useAuth } from "../auth.js";
 import { useSettings } from "../settings.js";
-import { duration, distance, unitLabel, localIsoDate, isoToBr } from "../format.js";
+import { duration, distance, unitLabel, localIsoDate, isoToBr, daysLabel } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 import { DateField } from "../components/DateField.js";
 
@@ -274,7 +274,7 @@ export function ProfileScreen() {
         <Stat label="Distância total" value={`${distance(stats?.totalDistanceMeters ?? 0, units)} ${unitLabel(units)}`} />
         <Stat label="Tempo total" value={duration(stats?.totalTimeSeconds ?? 0)} />
         <Stat label="Treinos" value={String(stats?.workoutCount ?? 0)} />
-        <Stat label="Sequência" value={`${stats?.streakDays ?? 0} dias`} />
+        <Stat label="Sequência" value={daysLabel(stats?.streakDays ?? 0)} />
       </View>
 
       {/* Missões */}

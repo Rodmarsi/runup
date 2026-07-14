@@ -138,3 +138,8 @@ export function duration(totalSeconds: number): string {
   const s = totalSeconds % 60;
   return h > 0 ? `${h}h${String(m).padStart(2, "0")}` : `${m}:${String(s).padStart(2, "0")}`;
 }
+
+/** "N dia(s)" com plural correto (1 ou menos → singular). */
+export function daysLabel(n: number): string {
+  return `${n} ${n <= 1 ? "dia" : "dias"}`;
+}

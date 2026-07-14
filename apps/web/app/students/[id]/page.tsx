@@ -13,8 +13,15 @@ const RACE_LABEL: Record<string, string> = {
 function km(m: number) {
   return (m / 1000).toFixed(1).replace(".", ",");
 }
-function hrs(s: number) {
-  return (s / 3600).toFixed(1).replace(".", ",");
+/** Duração em s como "1h20" ou "31:47" — mesmo formato usado no app do aluno. */
+function duration(totalSeconds: number) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return h > 0 ? `${h}h${String(m).padStart(2, "0")}` : `${m}:${String(s).padStart(2, "0")}`;
+}
+function daysLabel(n: number) {
+  return `${n} ${n <= 1 ? "dia" : "dias"}`;
 }
 function initials(name: string) {
   return name.split(" ").slice(0, 2).map((p) => p.charAt(0).toUpperCase()).join("");
@@ -89,6 +96,8 @@ export default function StudentDetailPage() {
     try {
       await api.updateWorkoutDay(dayId, { status: "skipped" });
       await load();
+    } catch {
+      alert("Não foi possível cancelar o treino.");
     } finally {
       setBusy(false);
     }
@@ -125,9 +134,9 @@ export default function StudentDetailPage() {
       {/* Stats */}
       <div style={styles.statGrid}>
         <Stat label="Distância total" value={`${km(data.stats.totalDistanceMeters)} km`} />
-        <Stat label="Tempo total" value={`${hrs(data.stats.totalTimeSeconds)} h`} />
+        <Stat label="Tempo total" value={duration(data.stats.totalTimeSeconds)} />
         <Stat label="Treinos" value={String(data.stats.workoutCount)} />
-        <Stat label="Streak" value={`${data.stats.streakDays} dias`} />
+        <Stat label="Streak" value={daysLabel(data.stats.streakDays)} />
       </div>
 
       {/* Metas */}
