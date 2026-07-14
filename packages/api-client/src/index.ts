@@ -49,6 +49,7 @@ import {
   type SearchRacesQuery,
   type ImportRaceInput,
   type NotificationDto,
+  type CompletedPlanDto,
 } from "./types.js";
 
 export * from "./types.js";
@@ -182,6 +183,10 @@ export class RunUpClient {
 
   currentPlan(): Promise<CurrentPlanDto | null> {
     return this.request<CurrentPlanDto | null>("GET", "/me/current-plan");
+  }
+
+  completedPlans(): Promise<CompletedPlanDto[]> {
+    return this.request<CompletedPlanDto[]>("GET", "/me/completed-plans");
   }
 
   workoutDay(id: string): Promise<WorkoutDayDetailDto> {

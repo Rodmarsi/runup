@@ -53,6 +53,18 @@ export interface CurrentPlanDto {
   kindBreakdown: { kind: string; count: number }[];
 }
 
+export interface CompletedPlanDto {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  madeByCoach: boolean;
+  coachName: string | null;
+  totalWorkouts: number;
+  completedWorkouts: number;
+  adherencePct: number;
+}
+
 export interface WorkoutCommentDto {
   id: string;
   authorId: string;
@@ -141,11 +153,20 @@ export interface LogWorkoutInput {
   shoeId?: string;
 }
 
-/** Treino avulso, sem estar ligado a um dia de um plano. */
+/**
+ * Treino avulso, sem estar ligado a um dia de um plano — registrado
+ * manualmente, ou importado de uma fonte automática (Health Connect, via
+ * `source`/`healthConnectId`/`completedAt`).
+ */
 export interface LogStandaloneWorkoutInput {
   kind?: WorkoutLogKind;
+  source?: "manual" | "health_connect";
+  healthConnectId?: string;
+  completedAt?: string;
   distanceMeters?: number;
   durationSeconds?: number;
+  avgHeartRate?: number;
+  caloriesKcal?: number;
   perceivedEffort?: number;
   pain?: string;
   notes?: string;

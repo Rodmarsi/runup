@@ -61,11 +61,21 @@ export const logWorkoutSchema = z.object({
 
 const workoutLogKind = z.enum(["running", "strength", "mobility", "bike", "walk", "other"]);
 
-/** Treino avulso, registrado pelo aluno sem estar ligado a um dia de um plano. */
+/**
+ * Treino avulso — registrado manualmente pelo aluno, ou importado de uma
+ * fonte automática (Health Connect). `source`/`healthConnectId`/`completedAt`
+ * só fazem sentido pra importação; o registro manual pelo app usa os
+ * defaults (source "manual", completedAt = agora).
+ */
 export const logStandaloneWorkoutSchema = z.object({
   kind: workoutLogKind.default("running"),
+  source: z.enum(["manual", "health_connect"]).default("manual"),
+  healthConnectId: z.string().min(1).optional(),
+  completedAt: z.string().datetime().optional(),
   distanceMeters: z.number().int().positive().optional(),
   durationSeconds: z.number().int().positive().optional(),
+  avgHeartRate: z.number().int().positive().optional(),
+  caloriesKcal: z.number().int().positive().optional(),
   perceivedEffort: z.number().int().min(1).max(10).optional(),
   pain: z.string().max(500).optional(),
   notes: z.string().max(2000).optional(),

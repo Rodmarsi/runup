@@ -59,6 +59,7 @@ enum WorkoutDayStatus {
 enum WorkoutLogSource {
   manual
   strava
+  health_connect
 }
 
 enum GoalStatus {
@@ -267,6 +268,8 @@ model WorkoutLog {
   kind              WorkoutLogKind   @default(running)
   // Id da atividade no Strava — evita importar a mesma atividade duas vezes.
   stravaActivityId  String?          @unique
+  // Id da sessão de exercício no Health Connect — mesma ideia do Strava acima.
+  healthConnectId   String?          @unique
   completedAt       DateTime         @default(now())
   distanceMeters    Int?
   durationSeconds   Int?

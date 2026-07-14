@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Platform, Alert } from "react-native";
 import { color, border } from "@runup/ui/tokens";
-import type { WorkoutLogDto, WorkoutDayDto, Stats, RacePredictionDto, GamificationSnapshot } from "@runup/api-client";
+import type { WorkoutLogDto, WorkoutDayDto, Stats, RacePredictionDto, GamificationSnapshot, CompletedPlanDto, StravaStatus } from "@runup/api-client";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useSettings } from "../settings.js";
-import { distance, unitLabel, duration, daysLabel } from "../format.js";
+import { distance, unitLabel, duration, daysLabel, isoToBr } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 import { HexagonMedal } from "../components/HexagonMedal.js";
+import { isHealthConnectAvailable, requestHealthConnectPermissions, syncHealthConnect } from "../healthConnect.js";
 
 const PREDICTION_LABEL: Record<string, string> = {
   "5k": "5 km",
@@ -244,6 +245,10 @@ export function AnalisesScreen() {
       <Text style={[text.overline, styles.label]}>RECORDES PESSOAIS</Text>
       <PersonalRecordsRow />
 
+      {/* Planos concluídos */}
+      <Text style={[text.overline, styles.label]}>PLANOS CONCLUÍDOS</Text>
+      <CompletedPlansSection />
+
       {/* Conquistas */}
       {gamification && gamification.achievements.length > 0 && (
         <>
@@ -270,6 +275,10 @@ export function AnalisesScreen() {
         <TotalRow icon="💤" label="Dias perdidos" value={String(missedDays)} />
         <TotalRow icon="⏳" label="Tempo médio/treino" value={avgTimePerWorkout ? duration(Math.round(avgTimePerWorkout)) : "—"} />
       </View>
+
+      {/* Fontes de dados */}
+      <Text style={[text.overline, styles.label]}>FONTES DE DADOS</Text>
+      <DataSourcesSection />
 
       {/* Previsão de tempo */}
       <Text style={[text.overline, styles.label]}>PREVISÃO DE TEMPO</Text>
@@ -322,6 +331,129 @@ function PersonalRecordsRow() {
         );
       })}
     </ScrollView>
+  );
+}
+
+function CompletedPlansSection() {
+  const [plans, setPlans] = useState<CompletedPlanDto[] | null>(null);
+
+  useEffect(() => {
+    api.completedPlans().then(setPlans).catch(() => setPlans([]));
+  }, []);
+
+  if (plans === null) return null;
+
+  if (plans.length === 0) {
+    return <Text style={text.muted}>Nenhum plano concluído ainda.</Text>;
+  }
+
+  return (
+    <View style={{ gap: 8 }}>
+      {plans.map((p) => (
+        <View key={p.id} style={styles.planCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.planTitle}>{p.title}</Text>
+            <Text style={text.muted}>
+              {isoToBr(p.startDate.slice(0, 10))} a {isoToBr(p.endDate.slice(0, 10))}
+              {p.madeByCoach && p.coachName ? ` · ${p.coachName}` : ""}
+            </Text>
+          </View>
+          <View style={styles.planAdherence}>
+            <Text style={styles.planAdherencePct}>{p.adherencePct}%</Text>
+            <Text style={text.muted}>aderência</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function DataSourcesSection() {
+  const [strava, setStrava] = useState<StravaStatus | null>(null);
+  const [stravaSyncing, setStravaSyncing] = useState(false);
+  const [stravaLastSync, setStravaLastSync] = useState<string | null>(null);
+
+  const [hcAvailable, setHcAvailable] = useState(false);
+  const [hcConnected, setHcConnected] = useState(false);
+  const [hcSyncing, setHcSyncing] = useState(false);
+  const [hcLastSync, setHcLastSync] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.stravaStatus().then(setStrava).catch(() => {});
+    if (Platform.OS === "android") {
+      isHealthConnectAvailable().then(setHcAvailable).catch(() => setHcAvailable(false));
+    }
+  }, []);
+
+  async function syncStrava() {
+    setStravaSyncing(true);
+    try {
+      await api.stravaSync();
+      setStravaLastSync(new Date().toISOString());
+    } catch {
+      Alert.alert("Erro", "Não foi possível sincronizar com o Strava agora.");
+    } finally {
+      setStravaSyncing(false);
+    }
+  }
+
+  async function connectAndSyncHealthConnect() {
+    setHcSyncing(true);
+    try {
+      const granted = await requestHealthConnectPermissions();
+      if (!granted) {
+        Alert.alert("Permissão negada", "Autorize o acesso aos dados de exercício no Health Connect.");
+        return;
+      }
+      setHcConnected(true);
+      const count = await syncHealthConnect();
+      setHcLastSync(new Date().toISOString());
+      Alert.alert("Sincronizado!", `${count} atividade${count === 1 ? "" : "s"} importada${count === 1 ? "" : "s"} do Health Connect.`);
+    } catch {
+      Alert.alert("Erro", "Não foi possível sincronizar com o Health Connect agora.");
+    } finally {
+      setHcSyncing(false);
+    }
+  }
+
+  return (
+    <View style={{ gap: 8 }}>
+      <View style={styles.sourceRow}>
+        <Text style={styles.sourceIcon}>🟠</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.sourceTitle}>Strava</Text>
+          <Text style={text.muted}>
+            {strava?.connected
+              ? stravaLastSync
+                ? `Sincronizado agora`
+                : "Conectado"
+              : "Não conectado"}
+          </Text>
+        </View>
+        {strava?.connected && (
+          <Pressable onPress={syncStrava} disabled={stravaSyncing} style={styles.sourceBtn}>
+            <Text style={styles.sourceBtnText}>{stravaSyncing ? "..." : "Sincronizar"}</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {Platform.OS === "android" && hcAvailable && (
+        <View style={styles.sourceRow}>
+          <Text style={styles.sourceIcon}>❤️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sourceTitle}>Health Connect</Text>
+            <Text style={text.muted}>
+              {hcLastSync ? "Sincronizado agora" : hcConnected ? "Conectado" : "Não conectado"}
+            </Text>
+          </View>
+          <Pressable onPress={connectAndSyncHealthConnect} disabled={hcSyncing} style={styles.sourceBtn}>
+            <Text style={styles.sourceBtnText}>
+              {hcSyncing ? "..." : hcConnected ? "Sincronizar" : "Conectar"}
+            </Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -415,6 +547,38 @@ const styles = StyleSheet.create({
   statValue: { fontFamily: font.bold, fontSize: 18, color: color.textPrimary, marginTop: 6 },
   predictionHint: { marginTop: 8, fontSize: 11 },
   medalRow: { flexDirection: "row" },
+  planCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 14,
+  },
+  planTitle: { fontFamily: font.semibold, fontSize: 13, color: color.textPrimary, marginBottom: 2 },
+  planAdherence: { alignItems: "flex-end" },
+  planAdherencePct: { fontFamily: font.bold, fontSize: 16, color: color.orange400 },
+  sourceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: color.surface2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    padding: 14,
+  },
+  sourceIcon: { fontSize: 20 },
+  sourceTitle: { fontFamily: font.semibold, fontSize: 13, color: color.textPrimary, marginBottom: 2 },
+  sourceBtn: {
+    backgroundColor: color.orangeDim,
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  sourceBtnText: { fontFamily: font.semibold, fontSize: 12, color: color.orange400 },
   achievementGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   achievementCard: {
     width: "31%",

@@ -242,6 +242,46 @@ export class PlanService {
   }
 
   /**
+   * Planos cujo último dia já passou — pra seção "Planos concluídos" do
+   * Desempenho. Um plano "atual" (mais recente) pode aparecer aqui também se
+   * já tiver terminado e nenhum outro tiver sido criado depois.
+   */
+  async completedPlansForStudent(studentId: string) {
+    const assignments = await this.db.planAssignment.findMany({
+      where: { studentId },
+      orderBy: { plan: { createdAt: "desc" } },
+      include: { plan: { include: { owner: true, workoutDays: true } } },
+    });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return assignments
+      .map(({ plan }) => {
+        const days = plan.workoutDays;
+        if (days.length === 0) return null;
+        const dates = days.map((d) => d.date.getTime());
+        const endDate = new Date(Math.max(...dates));
+        if (endDate >= today) return null;
+        const startDate = new Date(Math.min(...dates));
+        const completedDays = days.filter((d) => d.status === "done" || d.status === "partial").length;
+        return {
+          id: plan.id,
+          title: plan.title,
+          startDate,
+          endDate,
+          madeByCoach: plan.ownerId !== studentId,
+          coachName: plan.ownerId !== studentId ? plan.owner.name : null,
+          totalWorkouts: days.length,
+          completedWorkouts: completedDays,
+          adherencePct: Math.round((completedDays / days.length) * 100),
+        };
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null)
+      .sort((a, b) => b.endDate.getTime() - a.endDate.getTime());
+  }
+
+  /**
    * Lê um dia de treino, garantindo acesso: o aluno dono ou o treinador
    * vinculado a ele.
    */
@@ -319,8 +359,33 @@ export class PlanService {
     return log;
   }
 
-  /** Treino avulso — o aluno registra algo que fez sem estar num dia de plano. */
+  /**
+   * Treino avulso — o aluno registra algo que fez sem estar num dia de
+   * plano, ou uma fonte automática (Health Connect) importa uma sessão de
+   * exercício. Quando vem com `healthConnectId`, faz upsert por esse id em
+   * vez de sempre criar — sem isso, sincronizar de novo duplicaria a
+   * atividade.
+   */
   async logStandaloneWorkout(studentId: string, input: LogStandaloneWorkoutInput) {
+    const data = {
+      studentId,
+      source: input.source,
+      kind: input.kind,
+      distanceMeters: input.distanceMeters,
+      durationSeconds: input.durationSeconds,
+      avgPaceSecPerKm:
+        input.kind === "running"
+          ? derivePaceSecPerKm(input.distanceMeters, input.durationSeconds)
+          : undefined,
+      avgHeartRate: input.avgHeartRate,
+      caloriesKcal: input.caloriesKcal,
+      completedAt: input.completedAt ? new Date(input.completedAt) : undefined,
+      perceivedEffort: input.perceivedEffort,
+      pain: input.pain,
+      notes: input.notes,
+      shoeId: input.shoeId,
+    };
+
     const log = await this.db.$transaction(async (tx) => {
       if (input.shoeId) {
         await this.requireOwnShoe(tx, studentId, input.shoeId);
@@ -331,23 +396,13 @@ export class PlanService {
           });
         }
       }
-      return tx.workoutLog.create({
-        data: {
-          studentId,
-          source: "manual",
-          kind: input.kind,
-          distanceMeters: input.distanceMeters,
-          durationSeconds: input.durationSeconds,
-          avgPaceSecPerKm:
-            input.kind === "running"
-              ? derivePaceSecPerKm(input.distanceMeters, input.durationSeconds)
-              : undefined,
-          perceivedEffort: input.perceivedEffort,
-          pain: input.pain,
-          notes: input.notes,
-          shoeId: input.shoeId,
-        },
-      });
+      return input.healthConnectId
+        ? tx.workoutLog.upsert({
+            where: { healthConnectId: input.healthConnectId },
+            create: { ...data, healthConnectId: input.healthConnectId },
+            update: data,
+          })
+        : tx.workoutLog.create({ data });
     });
     await this.gamification.onWorkoutLogged(studentId, log.distanceMeters);
     return log;

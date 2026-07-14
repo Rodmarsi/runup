@@ -50,6 +50,10 @@ export function planRoutes(db: PrismaClient) {
       return plans.currentPlanForStudent(request.authUser!.id);
     });
 
+    app.get("/me/completed-plans", asStudent, async (request) => {
+      return plans.completedPlansForStudent(request.authUser!.id);
+    });
+
     // Detalhe de um dia (aluno dono ou treinador vinculado).
     app.get("/workout-days/:id", authed, async (request) => {
       const { id } = request.params as { id: string };
