@@ -9,11 +9,11 @@ import {
 } from "react-native";
 import { color, border } from "@runup/ui/tokens";
 import { ApiError } from "@runup/api-client";
-import type { BlockItem, BlockKind, RunningType } from "@runup/types";
+import type { Block, BlockItem, BlockKind, RunningType } from "@runup/types";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
-import { localIsoDate, parsePace, pace, duration, maskTimeDigits } from "../format.js";
+import { localIsoDate, parsePace, pace, duration, maskTimeDigits, RUNNING_TYPE_LABEL } from "../format.js";
 
 const KIND_LABEL: Record<BlockKind, string> = {
   running: "Corrida",
@@ -23,16 +23,12 @@ const KIND_LABEL: Record<BlockKind, string> = {
 };
 const KINDS: BlockKind[] = ["running", "strength", "mobility", "free"];
 
-// "Intervalado" fica de fora — pede estrutura de reps/recuperação que esse
+// "Tiros" fica de fora — pede estrutura de reps/recuperação que esse
 // criador simples não edita (isso é papel do wizard de IA ou do treinador).
 const RUNNING_TYPES: RunningType[] = ["easy", "long", "tempo", "recovery"];
-const RUNNING_TYPE_LABEL: Record<RunningType, string> = {
-  easy: "Leve",
-  intervals: "Intervalado",
-  long: "Longo",
-  tempo: "Tempo",
-  recovery: "Recuperação",
-};
+
+/** ~1km de trote leve — padrão razoável quando o aluno não especifica. */
+const DEFAULT_WARMUP_COOLDOWN_METERS = 1000;
 
 const WEEKDAYS = ["D", "S", "T", "Q", "Q", "S", "S"];
 const MONTHS = [
@@ -68,6 +64,10 @@ export function CreateWorkoutScreen({ initialDate }: { initialDate?: string }) {
   const [runningType, setRunningType] = useState<RunningType>("easy");
   const [distanceKm, setDistanceKm] = useState("");
   const [paceText, setPaceText] = useState("");
+  const [includeWarmup, setIncludeWarmup] = useState(false);
+  const [warmupKm, setWarmupKm] = useState("1");
+  const [includeCooldown, setIncludeCooldown] = useState(false);
+  const [cooldownKm, setCooldownKm] = useState("1");
   const [monthOffset, setMonthOffset] = useState(() => monthOffsetFor(initialDate));
   const [selectedDates, setSelectedDates] = useState<string[]>(initialDate ? [initialDate] : []);
   const [saving, setSaving] = useState(false);
@@ -121,20 +121,39 @@ export function CreateWorkoutScreen({ initialDate }: { initialDate?: string }) {
               kind: "free",
               notes: description.trim() ? `${name.trim()} — ${description.trim()}` : name.trim(),
             };
+
+      const blocks: Block[] = [];
+      if (kind === "running" && includeWarmup) {
+        const meters = warmupKm
+          ? Math.round(parseFloat(warmupKm.replace(",", ".")) * 1000)
+          : DEFAULT_WARMUP_COOLDOWN_METERS;
+        blocks.push({
+          kind: "running",
+          role: "warmup",
+          order: 0,
+          items: [{ kind: "running", runningType: "easy", distanceMeters: meters }],
+        });
+      }
+      blocks.push({ kind, role: "main", order: blocks.length, items: [item] });
+      if (kind === "running" && includeCooldown) {
+        const meters = cooldownKm
+          ? Math.round(parseFloat(cooldownKm.replace(",", ".")) * 1000)
+          : DEFAULT_WARMUP_COOLDOWN_METERS;
+        blocks.push({
+          kind: "running",
+          role: "cooldown",
+          order: blocks.length,
+          items: [{ kind: "running", runningType: "easy", distanceMeters: meters }],
+        });
+      }
+
       await api.createSelfPlan({
         title: name.trim(),
         durationWeeks: 1,
         days: selectedDates.map((date) => ({
           week: 1,
           date,
-          blocks: [
-            {
-              kind,
-              role: "main",
-              order: 0,
-              items: [item],
-            },
-          ],
+          blocks,
         })),
       });
       navigate({
@@ -251,6 +270,47 @@ export function CreateWorkoutScreen({ initialDate }: { initialDate?: string }) {
                 Não mais rápido que {pace(targetPaceSecPerKm)}/km. Isso é um limite, não uma meta.
               </Text>
             )}
+
+            <View style={styles.warmupRow}>
+              <Pressable
+                onPress={() => setIncludeWarmup((v) => !v)}
+                style={[styles.checkbox, includeWarmup && styles.checkboxActive]}
+              >
+                {includeWarmup && <Text style={styles.checkboxMark}>✓</Text>}
+              </Pressable>
+              <Text style={text.secondary}>Incluir aquecimento</Text>
+              {includeWarmup && (
+                <TextInput
+                  style={styles.warmupInput}
+                  value={warmupKm}
+                  onChangeText={setWarmupKm}
+                  keyboardType="decimal-pad"
+                  placeholder="1"
+                  placeholderTextColor={color.textMuted}
+                />
+              )}
+              {includeWarmup && <Text style={text.muted}>km</Text>}
+            </View>
+            <View style={styles.warmupRow}>
+              <Pressable
+                onPress={() => setIncludeCooldown((v) => !v)}
+                style={[styles.checkbox, includeCooldown && styles.checkboxActive]}
+              >
+                {includeCooldown && <Text style={styles.checkboxMark}>✓</Text>}
+              </Pressable>
+              <Text style={text.secondary}>Incluir desaquecimento</Text>
+              {includeCooldown && (
+                <TextInput
+                  style={styles.warmupInput}
+                  value={cooldownKm}
+                  onChangeText={setCooldownKm}
+                  keyboardType="decimal-pad"
+                  placeholder="1"
+                  placeholderTextColor={color.textMuted}
+                />
+              )}
+              {includeCooldown && <Text style={text.muted}>km</Text>}
+            </View>
           </View>
         ) : (
           <>
@@ -376,6 +436,31 @@ const styles = StyleSheet.create({
   },
   estimateValue: { fontFamily: font.semibold, fontSize: 15, color: color.textPrimary },
   paceHint: { marginTop: 8, fontSize: 12, lineHeight: 17 },
+  warmupRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: border.strong,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxActive: { backgroundColor: color.orange500, borderColor: color.orange500 },
+  checkboxMark: { fontFamily: font.semibold, fontSize: 12, color: color.ink },
+  warmupInput: {
+    backgroundColor: color.surface2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: border.hairline,
+    color: color.textPrimary,
+    fontFamily: font.regular,
+    fontSize: 13,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    width: 60,
+    marginLeft: "auto",
+  },
   monthHeader: {
     flexDirection: "row",
     alignItems: "center",

@@ -14,17 +14,16 @@ import { text, font, gradients } from "../theme.js";
 import { useNav } from "../nav.js";
 import { useSettings } from "../settings.js";
 import { api } from "../api.js";
-import { km, pace, localIsoDate, distance, paceForUnits, unitLabel, paceUnitLabel } from "../format.js";
+import { km, pace, localIsoDate, distance, paceForUnits, unitLabel, paceUnitLabel, RUNNING_TYPE_LABEL } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 import { DayDots } from "../components/DayDots.js";
 
 const WEEKDAYS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
-/** Descreve o primeiro item de corrida de um dia, para o card hero. */
+/** Descreve o bloco principal do dia, para o card hero. */
 function summarize(day: WorkoutDayDto): { title: string; sub: string } {
-  const running = day.blocks
-    .flatMap((b) => b.items)
-    .find((i) => i.kind === "running");
+  const mainBlock = day.blocks.find((b) => b.role === "main") ?? day.blocks[0];
+  const running = mainBlock?.items.find((i) => i.kind === "running");
   if (running && running.kind === "running") {
     const dist = running.distanceMeters ? `${km(running.distanceMeters)} km` : null;
     const p = running.targetPaceSecPerKm
@@ -33,7 +32,7 @@ function summarize(day: WorkoutDayDto): { title: string; sub: string } {
     return {
       title: running.interval
         ? `Tiros · ${running.interval.reps}× ${running.interval.repDistanceMeters ?? ""}m`
-        : "Corrida",
+        : RUNNING_TYPE_LABEL[running.runningType],
       sub: [dist, p].filter(Boolean).join(" · ") || "Treino do dia",
     };
   }

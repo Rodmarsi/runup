@@ -31,6 +31,12 @@ Regras:
   a experiência e o histórico do aluno. Considere lesões relatadas ao escolher o tipo de treino.
 - Inclua pelo menos 1 treino longo por semana quando fizer sentido pro objetivo, e preveja semanas de
   redução de carga (cutback) periodicamente ao longo do plano.
+- VARIE o runningType ao longo da semana — NUNCA gere todos os dias como "easy". Uma semana de
+  treino real de corredor mistura: 1 "long" (o longão, o mais longo da semana), 1-2 "easy" (rodagem,
+  ritmo confortável, a maioria dos dias), e — dependendo da experiência e fase do plano —
+  "intervals" (tiros, séries curtas e rápidas com recuperação) e/ou "tempo" (fartlek/ritmo forte
+  sustentado) pra estimular VO2 max e limiar. "recovery" é pra dias de trote bem leve após esforço
+  alto. Um plano onde todo dia é "easy" está errado — varie de verdade.
 - TODO item de corrida (kind "running"), em QUALQUER bloco (warmup, main, cooldown), DEVE vir com
   distanceMeters OU durationSeconds preenchido — e, quando fizer sentido pro tipo de treino,
   targetPaceSecPerKm também. Nunca deixe um item de corrida sem nenhum desses campos, mesmo que seja
@@ -41,7 +47,14 @@ Regras:
   principal.
 - "confidence" é sempre "high" (não há ambiguidade de leitura — é geração original).`;
 
+const WEEKDAY_NAME = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+
 export function buildPrompt(input: GeneratePlanInput, slots: PlanSlot[]): string {
+  const longRunDates =
+    input.longRunWeekday !== undefined
+      ? slots.filter((s) => s.weekday === input.longRunWeekday).map((s) => s.date)
+      : [];
+
   const lines = [
     `Objetivo do aluno: ${input.objective}`,
     input.targetRace
@@ -54,11 +67,18 @@ export function buildPrompt(input: GeneratePlanInput, slots: PlanSlot[]): string
       : null,
     input.injuries ? `Lesões/restrições relatadas: ${input.injuries}` : "Sem lesões relatadas.",
     `Duração do plano: ${input.durationWeeks} semanas`,
+    input.longRunWeekday !== undefined
+      ? `O aluno quer o treino longo (runningType "long") sempre no(a) ${WEEKDAY_NAME[input.longRunWeekday]}. ` +
+        `Nas datas abaixo marcadas como "longão", o bloco principal DEVE ser runningType "long": ` +
+        `${longRunDates.join(", ")}.`
+      : null,
   ]
     .filter(Boolean)
     .join("\n");
 
-  const slotList = slots.map((s) => `semana ${s.week}: ${s.date}`).join("\n");
+  const slotList = slots
+    .map((s) => `semana ${s.week}: ${s.date}${longRunDates.includes(s.date) ? " (longão)" : ""}`)
+    .join("\n");
 
   return `${lines}\n\nGere um treino pra CADA uma destas datas (nenhuma a mais, nenhuma a menos):\n${slotList}`;
 }

@@ -18,7 +18,7 @@ import type { RaceDistance } from "@runup/types";
 import { text, font } from "../theme.js";
 import { api } from "../api.js";
 import { useNav, type AiPlanPrefill } from "../nav.js";
-import { localIsoDate, parsePace, summarizePlanDays, weeksUntil } from "../format.js";
+import { localIsoDate, parsePace, summarizePlanDays, weeksUntil, RUNNING_TYPE_LABEL } from "../format.js";
 import { DateField } from "../components/DateField.js";
 
 const RACE_LABEL: Record<RaceDistance, string> = {
@@ -54,6 +54,7 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
   const [injuries, setInjuries] = useState("");
 
   const [weekdays, setWeekdays] = useState<number[]>([1, 3, 6]);
+  const [longRunWeekday, setLongRunWeekday] = useState<number | null>(null);
   const [durationWeeks, setDurationWeeks] = useState(8);
 
   // Com prova alvo definida, a duração do plano vem da data — sem pílula manual.
@@ -70,6 +71,7 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
 
   function toggleWeekday(d: number) {
     setWeekdays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()));
+    setLongRunWeekday((prev) => (prev === d ? null : prev));
   }
 
   // Progresso simulado (a API não expõe progresso real) — sobe rápido no
@@ -123,6 +125,7 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
         targetRace,
         raceDate: raceDate || undefined,
         availableWeekdays: weekdays,
+        longRunWeekday: longRunWeekday ?? undefined,
         durationWeeks: raceWeeks ?? durationWeeks,
         startDate: localIsoDate(),
         experience,
@@ -326,6 +329,28 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
               ))}
             </View>
 
+            {weekdays.length > 1 && (
+              <>
+                <Text style={[text.overline, styles.label]}>QUAL DIA É O LONGÃO?</Text>
+                <Text style={[text.muted, styles.hint]}>
+                  Opcional — se não escolher, a IA decide o melhor dia pra cada semana.
+                </Text>
+                <View style={styles.chips}>
+                  {weekdays.map((i) => (
+                    <Pressable
+                      key={i}
+                      onPress={() => setLongRunWeekday((prev) => (prev === i ? null : i))}
+                      style={[styles.chip, longRunWeekday === i && styles.chipActive]}
+                    >
+                      <Text style={longRunWeekday === i ? styles.chipTextActive : styles.chipText}>
+                        {WEEKDAY_LABEL[i]}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )}
+
             <Text style={[text.overline, styles.label]}>DURAÇÃO DO PLANO</Text>
             {raceWeeks !== null ? (
               <Text style={text.secondary}>
@@ -366,12 +391,15 @@ export function AiPlanWizardScreen({ prefill }: { prefill?: AiPlanPrefill }) {
             </Text>
             <View style={styles.previewList}>
               {preview.plan.days.map((d, i) => {
-                const item = d.blocks[0]?.items[0];
+                const mainBlock = d.blocks.find((b) => b.role === "main") ?? d.blocks[0];
+                const item = mainBlock?.items[0];
                 const desc =
                   item?.kind === "free"
                     ? item.notes
                     : item?.kind === "running"
-                      ? `Corrida · ${item.runningType}`
+                      ? item.interval
+                        ? `Tiros · ${item.interval.reps}× ${item.interval.repDistanceMeters ?? ""}m`
+                        : RUNNING_TYPE_LABEL[item.runningType]
                       : "Treino";
                 return (
                   <View key={i} style={styles.previewRow}>

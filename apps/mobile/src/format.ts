@@ -1,4 +1,13 @@
-import type { Block } from "@runup/types";
+import type { Block, RunningType } from "@runup/types";
+
+/** Vocabulário real de corredor, não o enum cru — usado em toda tela que mostra o tipo de treino. */
+export const RUNNING_TYPE_LABEL: Record<RunningType, string> = {
+  easy: "Rodagem",
+  long: "Longão",
+  intervals: "Tiros",
+  tempo: "Fartlek",
+  recovery: "Recuperação",
+};
 
 interface ShoeWear {
   totalKm: number;

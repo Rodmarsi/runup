@@ -9,6 +9,8 @@ export const generatePlanSchema = z.object({
   raceDate: isoDate.optional(),
   /** Dias da semana disponíveis pra treinar (0=domingo … 6=sábado). */
   availableWeekdays: z.array(z.number().int().min(0).max(6)).min(1).max(7),
+  /** Dia fixo do treino longo (0=domingo … 6=sábado) — precisa estar em availableWeekdays. */
+  longRunWeekday: z.number().int().min(0).max(6).optional(),
   durationWeeks: z.number().int().positive().max(24),
   startDate: isoDate,
   experience: z.enum(["beginner", "intermediate", "advanced"]),

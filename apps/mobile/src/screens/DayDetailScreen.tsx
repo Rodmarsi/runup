@@ -17,7 +17,7 @@ import { text, font, gradients } from "../theme.js";
 import { api } from "../api.js";
 import { useNav } from "../nav.js";
 import { useSettings } from "../settings.js";
-import { km, pace, localIsoDate } from "../format.js";
+import { km, pace, localIsoDate, RUNNING_TYPE_LABEL } from "../format.js";
 import { LoadError } from "../components/LoadError.js";
 import { WorkoutLogResult } from "../components/WorkoutLogResult.js";
 
@@ -47,7 +47,9 @@ function describeItem(item: BlockItem): string {
     }
     const dist = item.distanceMeters ? `${km(item.distanceMeters)} km` : "";
     const p = item.targetPaceSecPerKm ? ` @ ${pace(item.targetPaceSecPerKm)}/km` : "";
-    return `${dist}${p}`.trim() || "Corrida";
+    const detail = `${dist}${p}`.trim();
+    const label = RUNNING_TYPE_LABEL[item.runningType];
+    return detail ? `${label} · ${detail}` : label;
   }
   if (item.kind === "free") return item.notes;
   return `${item.sets ?? ""}×${item.reps ?? ""}`.replace(/^×$/, "Exercício");

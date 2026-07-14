@@ -391,6 +391,8 @@ export interface GeneratePlanInput {
   raceDate?: string;
   /** Dias da semana disponíveis (0=domingo … 6=sábado). */
   availableWeekdays: number[];
+  /** Dia fixo do treino longo (0=domingo … 6=sábado). */
+  longRunWeekday?: number;
   durationWeeks: number;
   startDate: string;
   experience: ExperienceLevel;
