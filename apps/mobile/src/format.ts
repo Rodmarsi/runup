@@ -29,6 +29,30 @@ export function isoToBr(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+const MONTHS_LONG = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+const MONTHS_SHORT = [
+  "jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez",
+];
+
+/** "2026-07" → "Julho de 2026" (cabeçalho de grupo mensal). */
+export function monthYearLabel(yearMonth: string): string {
+  const [y, m] = yearMonth.split("-").map(Number);
+  const name = MONTHS_LONG[(m ?? 1) - 1] ?? "";
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} de ${y}`;
+}
+
+/** ISO datetime → "12 de jul de 2026 · 10:14". */
+export function longDateTime(iso: string): string {
+  const d = new Date(iso);
+  const month = MONTHS_SHORT[d.getMonth()];
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${d.getDate()} de ${month} de ${d.getFullYear()} · ${hh}:${mm}`;
+}
+
 /** Date local (sem UTC) → "2026-07-12", pro valor que sai do date picker. */
 export function dateToIso(d: Date): string {
   return localIsoDate(d);
