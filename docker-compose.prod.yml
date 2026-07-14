@@ -17,9 +17,7 @@ services:
       retries: 5
 
   api:
-    build:
-      context: .
-      dockerfile: packages/api/Dockerfile
+    image: ghcr.io/rodmarsi/runup-api:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -34,18 +32,16 @@ services:
       STRAVA_CLIENT_SECRET: ${STRAVA_CLIENT_SECRET}
       STRAVA_REDIRECT_URI: ${API_ORIGIN}/strava/callback
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${API_ORIGIN}/auth/google/callback
+      INTERNAL_CRON_SECRET: ${INTERNAL_CRON_SECRET}
     expose:
       - "3333"
 
   web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${API_ORIGIN}
+    image: ghcr.io/rodmarsi/runup-web:latest
     restart: unless-stopped
     depends_on:
       - api

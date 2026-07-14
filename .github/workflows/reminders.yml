@@ -12,5 +12,5 @@ jobs:
     steps:
       - name: Chamar o endpoint de lembretes da API
         run: |
-          curl -f -X POST "https://runup-api.onrender.com/internal/reminders/run" \
+          curl -f -X POST "https://api.apprunup.com/internal/reminders/run" \
             -H "x-cron-secret: ${{ secrets.REMINDER_CRON_SECRET }}"
