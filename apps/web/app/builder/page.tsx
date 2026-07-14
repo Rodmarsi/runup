@@ -233,14 +233,14 @@ export default function BuilderPage() {
               <div style={styles.fieldsRow}>
                 {b.intervals ? (
                   <>
-                    <MiniField label="REPS" value={b.reps} onChange={(v) => update(i, { reps: v })} ph="10" />
-                    <MiniField label="DIST (m)" value={b.repDist} onChange={(v) => update(i, { repDist: v })} ph="400" />
-                    <MiniField label="REC (s)" value={b.recovery} onChange={(v) => update(i, { recovery: v })} ph="90" />
+                    <MiniField label="REPS" value={b.reps} onChange={(v) => update(i, { reps: v })} ph="10" grow={0.6} />
+                    <MiniField label="DIST (m)" value={b.repDist} onChange={(v) => update(i, { repDist: v })} ph="400" grow={1} />
+                    <MiniField label="REC (s)" value={b.recovery} onChange={(v) => update(i, { recovery: v })} ph="90" grow={0.8} />
                   </>
                 ) : (
-                  <MiniField label="DIST (km)" value={b.distanceKm} onChange={(v) => update(i, { distanceKm: v })} ph="6,5" />
+                  <MiniField label="DIST (km)" value={b.distanceKm} onChange={(v) => update(i, { distanceKm: v })} ph="6,5" grow={1} />
                 )}
-                <MiniField label="PACE (m:ss)" value={b.pace} onChange={(v) => update(i, { pace: v })} ph="4:30" accent />
+                <MiniField label="PACE (m:ss)" value={b.pace} onChange={(v) => update(i, { pace: v })} ph="4:30" accent grow={1} />
               </div>
             </>
           )}
@@ -268,15 +268,17 @@ function MiniField({
   onChange,
   ph,
   accent,
+  grow = 1,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   ph: string;
   accent?: boolean;
+  grow?: number;
 }) {
   return (
-    <label style={styles.field}>
+    <label style={{ ...styles.field, flex: grow }}>
       <span style={styles.label}>{label}</span>
       <input
         style={{ ...styles.input, ...(accent ? { color: color.orange400 } : {}) }}
